@@ -1,0 +1,120 @@
+# Testbed-matched slice traffic simulator (see PLAN.md, Phase 1)
+sim_version: "1.0"
+tick_s: 0.1            # internal resolution (100 ms)
+out_dt_s: 1.0          # output resolution (1 s)
+trace_hours: 1.0
+base_seed: 20261126
+splits: {train: 84, val: 18, test: 18, ood: 10}
+split_profile: {train: in, val: in, test: in, ood: ood}
+
+radio:                 # Band n78, 60 MHz, 30 kHz SCS
+  total_prb: 162
+  slots_per_s: 2000    # 0.5 ms slots at 30 kHz SCS
+  re_per_prb_slot: 168 # 12 subcarriers x 14 symbols
+  overhead: 0.14       # DMRS / control / reference signals
+  dl_ratio: 0.7        # TDD downlink share
+  se_scale: 1.0        # CALIBRATE from iperf3 test on the testbed
+
+slices:
+  names: [embb, urllc, mmtc]
+  n_ue: [3, 3, 3]
+  min_prb: [20, 20, 10]      # guaranteed share (only used if demanded)
+  max_prb: [140, 100, 60]
+  weight: [1.0, 2.0, 0.5]    # priority weight in the allocator
+  base_latency_ms: [8, 2, 15]
+  ue_max_prb: [60, 30, 25]  # per-UE demand cap (rate adaptation to the channel)
+
+allocator:
+  mode: proportional   # proportional | static
+  drain_s: 0.5         # backlog is drained over this time
+  max_backlog_s: 2.0   # backlog cap (TCP/ABR back off), in seconds of max_prb
+
+scenarios: [stable, ramp_up, ramp_down, burst, ue_churn, contention, sla_conflict]
+
+# Domain randomization. per_trace: one value drawn uniformly per trace.
+# events: ranges drawn per event inside a trace.
+profiles:
+  in:
+    per_trace:
+      w_stable: [3, 5]
+      w_ramp_up: [1, 2]
+      w_ramp_down: [1, 2]
+      w_burst: [1, 2]
+      w_ue_churn: [0.5, 1.5]
+      w_contention: [0.5, 1.2]
+      w_sla_conflict: [0.5, 1.2]
+      seg_scale: [0.8, 1.2]
+      trend_amp: [0.05, 0.2]
+      trend_period_s: [600, 1800]
+      intensity_noise: [0.01, 0.03]
+      embb_dwell_s: [10, 40]
+      embb_bulk_per_min: [0.3, 1.5]
+      embb_noise: [0.1, 0.3]
+      urllc_base_mbps: [0.2, 1.0]
+      urllc_burst_per_min_idle: [0.1, 0.5]
+      urllc_burst_per_min_active: [4, 10]
+      urllc_common_burst_p: [0.2, 0.5]
+      urllc_headroom: [1.2, 1.5]
+      urllc_cycle_period_s: [15, 45]   # AGV / robot motion control cycle
+      urllc_cycle_duty: [0.3, 0.6]
+      urllc_cycle_mbps: [1.0, 4.0]
+      urllc_alarm_mbps: [1.5, 3.0]     # sustained high-rate mode during events
+      urllc_alarm_ramp_s: [1.0, 3.0]
+      mmtc_dev_max: [300, 1500]
+      mmtc_interval_s: [2, 6]
+      mmtc_payload_b: [200, 800]
+      mmtc_overhead: [1.3, 1.8]
+      mmtc_dev_tau_s: [10, 30]
+      mmtc_wave_period_s: [30, 60]
+      mmtc_wave_frac: [0.3, 0.8]
+      cqi_mean_embb: [11, 14]
+      cqi_mean_urllc: [10, 14]
+      cqi_mean_mmtc: [6, 11]
+      cqi_std: [0.8, 2.0]
+      cqi_tau_s: [5, 30]
+      cqi_drops_per_min: [0.2, 0.6]
+      ue_mean_on_s: [300, 900]
+      ue_mean_off_s: [30, 120]
+      churn_mean_on_s: [15, 60]
+      churn_mean_off_s: [10, 40]
+    events:
+      seg_dur_s:
+        stable: [20, 120]
+        ramp_up: [20, 90]
+        ramp_down: [20, 90]
+        burst: [20, 90]
+        ue_churn: [20, 90]
+        contention: [15, 60]
+        sla_conflict: [15, 45]
+      ramp_s: [5, 60]
+      switch_s: [2, 5]
+      contention_ramp_s: [3, 10]
+      embb_levels_mbps: [2, 5, 8, 15, 25]
+      embb_bulk_dur_s: [5, 60]
+      embb_bulk_mbps: [5, 20]
+      urllc_burst_dur_s: [2, 10]
+      urllc_burst_mbps: [2, 5]
+      mmtc_wave_len_s: [1, 3]
+      cqi_drop_dur_s: [5, 20]
+      cqi_drop_depth: [3, 6]
+
+  ood:                 # out-of-distribution test: ranges outside training
+    inherits: in
+    per_trace:
+      urllc_burst_per_min_active: [10, 16]
+      embb_bulk_per_min: [1.5, 3.0]
+      cqi_tau_s: [2, 5]
+      cqi_drops_per_min: [0.6, 1.2]
+      mmtc_wave_period_s: [15, 30]
+    events:
+      seg_dur_s:
+        stable: [10, 60]
+        ramp_up: [10, 40]
+        ramp_down: [10, 40]
+        burst: [20, 60]
+        ue_churn: [10, 40]
+        contention: [30, 90]
+        sla_conflict: [30, 60]
+      urllc_burst_dur_s: [10, 25]
+      embb_levels_mbps: [3, 8, 12, 20, 40]
+      cqi_drop_dur_s: [20, 40]

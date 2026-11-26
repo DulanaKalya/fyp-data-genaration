@@ -1,0 +1,322 @@
+{
+ "trace_id": "val_003",
+ "profile": "in",
+ "seed": 20361129,
+ "sim_version": "1.0",
+ "params": {
+  "w_stable": 4.660596889117313,
+  "w_ramp_up": 1.8759424779132854,
+  "w_ramp_down": 1.4645875297862883,
+  "w_burst": 1.7414985381786443,
+  "w_ue_churn": 0.8667461829759409,
+  "w_contention": 1.144076538852812,
+  "w_sla_conflict": 0.5708591688904762,
+  "seg_scale": 1.0657623560848495,
+  "trend_amp": 0.1368686213121074,
+  "trend_period_s": 1781.8262623681758,
+  "intensity_noise": 0.016872075123887477,
+  "embb_dwell_s": 21.85314397618489,
+  "embb_bulk_per_min": 1.3797553457208103,
+  "embb_noise": 0.1565732577552452,
+  "urllc_base_mbps": 0.5016975126359161,
+  "urllc_burst_per_min_idle": 0.4984875884569374,
+  "urllc_burst_per_min_active": 6.932213040923312,
+  "urllc_common_burst_p": 0.4188850226397791,
+  "urllc_headroom": 1.4482923247563302,
+  "urllc_cycle_period_s": 32.524839161366785,
+  "urllc_cycle_duty": 0.42060563142918983,
+  "urllc_cycle_mbps": 1.0624490941147073,
+  "urllc_alarm_mbps": 2.463579940282912,
+  "urllc_alarm_ramp_s": 2.302810764472106,
+  "mmtc_dev_max": 880.8619095922814,
+  "mmtc_interval_s": 4.6397263905618935,
+  "mmtc_payload_b": 631.596358992332,
+  "mmtc_overhead": 1.306802888772873,
+  "mmtc_dev_tau_s": 19.132780803039083,
+  "mmtc_wave_period_s": 40.812547453964925,
+  "mmtc_wave_frac": 0.3745431299082219,
+  "cqi_mean_embb": 13.25968395224033,
+  "cqi_mean_urllc": 11.512977259995264,
+  "cqi_mean_mmtc": 8.569395714039914,
+  "cqi_std": 1.4412992373173386,
+  "cqi_tau_s": 22.512704846288308,
+  "cqi_drops_per_min": 0.5364835074179306,
+  "ue_mean_on_s": 726.4269709224662,
+  "ue_mean_off_s": 76.2580334997644,
+  "churn_mean_on_s": 18.055990616129346,
+  "churn_mean_off_s": 17.947400205484566
+ },
+ "segments": [
+  {
+   "start_s": 0.0,
+   "end_s": 22.0,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 22.0,
+   "end_s": 86.80000000000001,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 86.80000000000001,
+   "end_s": 138.1,
+   "scenario": "contention"
+  },
+  {
+   "start_s": 138.1,
+   "end_s": 196.8,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 196.8,
+   "end_s": 221.5,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 221.5,
+   "end_s": 270.8,
+   "scenario": "contention"
+  },
+  {
+   "start_s": 270.8,
+   "end_s": 320.1,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 320.1,
+   "end_s": 344.20000000000005,
+   "scenario": "contention"
+  },
+  {
+   "start_s": 344.20000000000005,
+   "end_s": 471.70000000000005,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 471.70000000000005,
+   "end_s": 587.6,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 587.6,
+   "end_s": 614.1,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 614.1,
+   "end_s": 706.1,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 706.1,
+   "end_s": 746.2,
+   "scenario": "contention"
+  },
+  {
+   "start_s": 746.2,
+   "end_s": 852.8000000000001,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 852.8000000000001,
+   "end_s": 889.8000000000001,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 889.8000000000001,
+   "end_s": 1005.2,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1005.2,
+   "end_s": 1084.8,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 1084.8,
+   "end_s": 1171.2,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1171.2,
+   "end_s": 1217.7,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1217.7,
+   "end_s": 1274.4,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1274.4,
+   "end_s": 1298.2,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 1298.2,
+   "end_s": 1351.5,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1351.5,
+   "end_s": 1425.0,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 1425.0,
+   "end_s": 1449.5,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 1449.5,
+   "end_s": 1539.1000000000001,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1539.1000000000001,
+   "end_s": 1634.2,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 1634.2,
+   "end_s": 1711.7,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 1711.7,
+   "end_s": 1832.2,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1832.2,
+   "end_s": 1860.0,
+   "scenario": "contention"
+  },
+  {
+   "start_s": 1860.0,
+   "end_s": 1943.0,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1943.0,
+   "end_s": 2022.0,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2022.0,
+   "end_s": 2081.2000000000003,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 2081.2000000000003,
+   "end_s": 2191.6,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2191.6,
+   "end_s": 2274.8,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 2274.8,
+   "end_s": 2312.1,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2312.1,
+   "end_s": 2371.8,
+   "scenario": "contention"
+  },
+  {
+   "start_s": 2371.8,
+   "end_s": 2476.9,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2476.9,
+   "end_s": 2518.5,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 2518.5,
+   "end_s": 2598.9,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 2598.9,
+   "end_s": 2693.5,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 2693.5,
+   "end_s": 2748.5,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2748.5,
+   "end_s": 2769.9,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 2769.9,
+   "end_s": 2834.0,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2834.0,
+   "end_s": 2900.2000000000003,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 2900.2000000000003,
+   "end_s": 2995.0,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2995.0,
+   "end_s": 3082.6000000000004,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 3082.6000000000004,
+   "end_s": 3203.7000000000003,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 3203.7000000000003,
+   "end_s": 3251.5,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 3251.5,
+   "end_s": 3310.1000000000004,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 3310.1000000000004,
+   "end_s": 3343.5,
+   "scenario": "contention"
+  },
+  {
+   "start_s": 3343.5,
+   "end_s": 3424.2000000000003,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 3424.2000000000003,
+   "end_s": 3452.9,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 3452.9,
+   "end_s": 3494.2000000000003,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 3494.2000000000003,
+   "end_s": 3600.0,
+   "scenario": "stable"
+  }
+ ],
+ "split": "val"
+}

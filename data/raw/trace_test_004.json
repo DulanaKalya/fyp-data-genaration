@@ -1,0 +1,372 @@
+{
+ "trace_id": "test_004",
+ "profile": "in",
+ "seed": 20461130,
+ "sim_version": "1.0",
+ "params": {
+  "w_stable": 4.267217610881888,
+  "w_ramp_up": 1.6797679747246625,
+  "w_ramp_down": 1.9904909392261312,
+  "w_burst": 1.3530546723612757,
+  "w_ue_churn": 0.5255060779925645,
+  "w_contention": 1.1210672823768482,
+  "w_sla_conflict": 0.5761796979050683,
+  "seg_scale": 0.9750477092380679,
+  "trend_amp": 0.15925160651065404,
+  "trend_period_s": 1177.0195050928464,
+  "intensity_noise": 0.0218071327138331,
+  "embb_dwell_s": 27.04616240560145,
+  "embb_bulk_per_min": 0.9649242155199882,
+  "embb_noise": 0.2285730522102932,
+  "urllc_base_mbps": 0.5439027788502023,
+  "urllc_burst_per_min_idle": 0.4252706133055353,
+  "urllc_burst_per_min_active": 5.0784787502567434,
+  "urllc_common_burst_p": 0.30830984969467495,
+  "urllc_headroom": 1.2823354392290947,
+  "urllc_cycle_period_s": 26.476727166042537,
+  "urllc_cycle_duty": 0.48434073554110113,
+  "urllc_cycle_mbps": 1.5754071181981044,
+  "urllc_alarm_mbps": 2.168363521340747,
+  "urllc_alarm_ramp_s": 1.469108189602027,
+  "mmtc_dev_max": 1485.7050829451114,
+  "mmtc_interval_s": 5.286834708192282,
+  "mmtc_payload_b": 632.097616435538,
+  "mmtc_overhead": 1.3896123085115155,
+  "mmtc_dev_tau_s": 29.37398893649785,
+  "mmtc_wave_period_s": 59.62634141102092,
+  "mmtc_wave_frac": 0.7020557541061301,
+  "cqi_mean_embb": 13.662905869181824,
+  "cqi_mean_urllc": 12.015044761868117,
+  "cqi_mean_mmtc": 6.098220903683189,
+  "cqi_std": 0.9192975410084457,
+  "cqi_tau_s": 12.169816855282129,
+  "cqi_drops_per_min": 0.3153005681427278,
+  "ue_mean_on_s": 524.3315866479551,
+  "ue_mean_off_s": 116.66033929679749,
+  "churn_mean_on_s": 51.48215796028445,
+  "churn_mean_off_s": 19.67774954489657
+ },
+ "segments": [
+  {
+   "start_s": 0.0,
+   "end_s": 24.5,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 24.5,
+   "end_s": 62.5,
+   "scenario": "contention"
+  },
+  {
+   "start_s": 62.5,
+   "end_s": 145.1,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 145.1,
+   "end_s": 257.5,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 257.5,
+   "end_s": 305.1,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 305.1,
+   "end_s": 327.0,
+   "scenario": "contention"
+  },
+  {
+   "start_s": 327.0,
+   "end_s": 439.70000000000005,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 439.70000000000005,
+   "end_s": 517.5,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 517.5,
+   "end_s": 548.3000000000001,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 548.3000000000001,
+   "end_s": 589.3000000000001,
+   "scenario": "contention"
+  },
+  {
+   "start_s": 589.3000000000001,
+   "end_s": 624.8000000000001,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 624.8000000000001,
+   "end_s": 676.9000000000001,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 676.9000000000001,
+   "end_s": 793.1,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 793.1,
+   "end_s": 841.0,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 841.0,
+   "end_s": 864.4000000000001,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 864.4000000000001,
+   "end_s": 880.5,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 880.5,
+   "end_s": 910.9000000000001,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 910.9000000000001,
+   "end_s": 969.0,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 969.0,
+   "end_s": 1012.3000000000001,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1012.3000000000001,
+   "end_s": 1091.0,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 1091.0,
+   "end_s": 1177.6000000000001,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1177.6000000000001,
+   "end_s": 1246.9,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 1246.9,
+   "end_s": 1356.2,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1356.2,
+   "end_s": 1425.1000000000001,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 1425.1000000000001,
+   "end_s": 1478.5,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 1478.5,
+   "end_s": 1507.4,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 1507.4,
+   "end_s": 1579.0,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1579.0,
+   "end_s": 1611.7,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 1611.7,
+   "end_s": 1648.1000000000001,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 1648.1000000000001,
+   "end_s": 1682.1000000000001,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1682.1000000000001,
+   "end_s": 1712.1000000000001,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 1712.1000000000001,
+   "end_s": 1753.2,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1753.2,
+   "end_s": 1787.7,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 1787.7,
+   "end_s": 1831.3000000000002,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 1831.3000000000002,
+   "end_s": 1861.4,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 1861.4,
+   "end_s": 1911.6000000000001,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1911.6000000000001,
+   "end_s": 1960.4,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1960.4,
+   "end_s": 1984.7,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1984.7,
+   "end_s": 2048.7000000000003,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 2048.7000000000003,
+   "end_s": 2133.8,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2133.8,
+   "end_s": 2214.3,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 2214.3,
+   "end_s": 2293.9,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 2293.9,
+   "end_s": 2410.0,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2410.0,
+   "end_s": 2497.6000000000004,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 2497.6000000000004,
+   "end_s": 2581.2000000000003,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 2581.2000000000003,
+   "end_s": 2631.3,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 2631.3,
+   "end_s": 2662.3,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 2662.3,
+   "end_s": 2742.0,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 2742.0,
+   "end_s": 2790.4,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 2790.4,
+   "end_s": 2894.3,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2894.3,
+   "end_s": 2917.2000000000003,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 2917.2000000000003,
+   "end_s": 2968.9,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2968.9,
+   "end_s": 2993.8,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 2993.8,
+   "end_s": 3072.2000000000003,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 3072.2000000000003,
+   "end_s": 3126.2000000000003,
+   "scenario": "contention"
+  },
+  {
+   "start_s": 3126.2000000000003,
+   "end_s": 3191.5,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 3191.5,
+   "end_s": 3227.2000000000003,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 3227.2000000000003,
+   "end_s": 3296.5,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 3296.5,
+   "end_s": 3360.1000000000004,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 3360.1000000000004,
+   "end_s": 3388.7000000000003,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 3388.7000000000003,
+   "end_s": 3494.4,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 3494.4,
+   "end_s": 3550.9,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 3550.9,
+   "end_s": 3570.2000000000003,
+   "scenario": "contention"
+  },
+  {
+   "start_s": 3570.2000000000003,
+   "end_s": 3600.0,
+   "scenario": "ue_churn"
+  }
+ ],
+ "split": "test"
+}

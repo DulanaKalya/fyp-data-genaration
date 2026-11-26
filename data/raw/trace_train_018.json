@@ -1,0 +1,422 @@
+{
+ "trace_id": "train_018",
+ "profile": "in",
+ "seed": 20261144,
+ "sim_version": "1.0",
+ "params": {
+  "w_stable": 4.883734308687485,
+  "w_ramp_up": 1.2361882332676593,
+  "w_ramp_down": 1.756898195871425,
+  "w_burst": 1.2133973600249932,
+  "w_ue_churn": 0.9276329049466177,
+  "w_contention": 0.8113279567985359,
+  "w_sla_conflict": 0.5658935648069036,
+  "seg_scale": 0.9630657771841578,
+  "trend_amp": 0.12735140464707498,
+  "trend_period_s": 1790.3693518905218,
+  "intensity_noise": 0.01970690987273415,
+  "embb_dwell_s": 20.417807158486077,
+  "embb_bulk_per_min": 0.9424419979775038,
+  "embb_noise": 0.1032728892869082,
+  "urllc_base_mbps": 0.9986069655113134,
+  "urllc_burst_per_min_idle": 0.4750681067140051,
+  "urllc_burst_per_min_active": 4.571968555477113,
+  "urllc_common_burst_p": 0.4865471119630547,
+  "urllc_headroom": 1.3837558863968338,
+  "urllc_cycle_period_s": 17.608181993035828,
+  "urllc_cycle_duty": 0.544735191129722,
+  "urllc_cycle_mbps": 1.2574050283421467,
+  "urllc_alarm_mbps": 2.6882130258097234,
+  "urllc_alarm_ramp_s": 2.1597861061508086,
+  "mmtc_dev_max": 1308.5191750921686,
+  "mmtc_interval_s": 4.912661309559579,
+  "mmtc_payload_b": 653.3636415716572,
+  "mmtc_overhead": 1.4826882800831824,
+  "mmtc_dev_tau_s": 25.777579264934303,
+  "mmtc_wave_period_s": 36.75450621737764,
+  "mmtc_wave_frac": 0.5975960417434802,
+  "cqi_mean_embb": 12.879667637744049,
+  "cqi_mean_urllc": 11.672935469645667,
+  "cqi_mean_mmtc": 7.249015937178312,
+  "cqi_std": 1.1808853638536778,
+  "cqi_tau_s": 21.954968087920864,
+  "cqi_drops_per_min": 0.38893201653598863,
+  "ue_mean_on_s": 501.0744739483559,
+  "ue_mean_off_s": 47.034741109415904,
+  "churn_mean_on_s": 46.77209483868897,
+  "churn_mean_off_s": 25.068870243329375
+ },
+ "segments": [
+  {
+   "start_s": 0.0,
+   "end_s": 37.7,
+   "scenario": "contention"
+  },
+  {
+   "start_s": 37.7,
+   "end_s": 79.5,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 79.5,
+   "end_s": 154.60000000000002,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 154.60000000000002,
+   "end_s": 176.10000000000002,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 176.10000000000002,
+   "end_s": 206.0,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 206.0,
+   "end_s": 243.9,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 243.9,
+   "end_s": 323.3,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 323.3,
+   "end_s": 390.20000000000005,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 390.20000000000005,
+   "end_s": 421.3,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 421.3,
+   "end_s": 514.9,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 514.9,
+   "end_s": 542.9,
+   "scenario": "contention"
+  },
+  {
+   "start_s": 542.9,
+   "end_s": 627.6,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 627.6,
+   "end_s": 711.6,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 711.6,
+   "end_s": 754.0,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 754.0,
+   "end_s": 831.7,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 831.7,
+   "end_s": 868.6,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 868.6,
+   "end_s": 923.4000000000001,
+   "scenario": "contention"
+  },
+  {
+   "start_s": 923.4000000000001,
+   "end_s": 987.9000000000001,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 987.9000000000001,
+   "end_s": 1024.5,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 1024.5,
+   "end_s": 1065.0,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 1065.0,
+   "end_s": 1098.5,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 1098.5,
+   "end_s": 1179.9,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 1179.9,
+   "end_s": 1228.0,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 1228.0,
+   "end_s": 1264.4,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 1264.4,
+   "end_s": 1293.5,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 1293.5,
+   "end_s": 1315.2,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 1315.2,
+   "end_s": 1371.6000000000001,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1371.6000000000001,
+   "end_s": 1421.9,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 1421.9,
+   "end_s": 1505.9,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1505.9,
+   "end_s": 1536.9,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 1536.9,
+   "end_s": 1556.4,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1556.4,
+   "end_s": 1630.4,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 1630.4,
+   "end_s": 1664.8000000000002,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 1664.8000000000002,
+   "end_s": 1743.4,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 1743.4,
+   "end_s": 1809.1000000000001,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 1809.1000000000001,
+   "end_s": 1833.7,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1833.7,
+   "end_s": 1853.5,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 1853.5,
+   "end_s": 1876.5,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 1876.5,
+   "end_s": 1934.4,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 1934.4,
+   "end_s": 1995.2,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 1995.2,
+   "end_s": 2025.5,
+   "scenario": "contention"
+  },
+  {
+   "start_s": 2025.5,
+   "end_s": 2101.0,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2101.0,
+   "end_s": 2181.9,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 2181.9,
+   "end_s": 2214.3,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2214.3,
+   "end_s": 2248.9,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 2248.9,
+   "end_s": 2321.1,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 2321.1,
+   "end_s": 2346.6,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 2346.6,
+   "end_s": 2420.5,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 2420.5,
+   "end_s": 2488.0,
+   "scenario": "burst"
+  },
+  {
+   "start_s": 2488.0,
+   "end_s": 2552.1000000000004,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 2552.1000000000004,
+   "end_s": 2581.4,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 2581.4,
+   "end_s": 2636.4,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2636.4,
+   "end_s": 2661.0,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 2661.0,
+   "end_s": 2721.5,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2721.5,
+   "end_s": 2745.7000000000003,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 2745.7000000000003,
+   "end_s": 2771.3,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 2771.3,
+   "end_s": 2830.0,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 2830.0,
+   "end_s": 2850.0,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2850.0,
+   "end_s": 2915.5,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 2915.5,
+   "end_s": 2945.4,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 2945.4,
+   "end_s": 2980.1000000000004,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 2980.1000000000004,
+   "end_s": 3052.2000000000003,
+   "scenario": "ramp_up"
+  },
+  {
+   "start_s": 3052.2000000000003,
+   "end_s": 3113.9,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 3113.9,
+   "end_s": 3163.1000000000004,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 3163.1000000000004,
+   "end_s": 3246.3,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 3246.3,
+   "end_s": 3275.9,
+   "scenario": "sla_conflict"
+  },
+  {
+   "start_s": 3275.9,
+   "end_s": 3298.0,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 3298.0,
+   "end_s": 3358.0,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 3358.0,
+   "end_s": 3414.8,
+   "scenario": "stable"
+  },
+  {
+   "start_s": 3414.8,
+   "end_s": 3435.5,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 3435.5,
+   "end_s": 3495.6000000000004,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 3495.6000000000004,
+   "end_s": 3515.5,
+   "scenario": "ue_churn"
+  },
+  {
+   "start_s": 3515.5,
+   "end_s": 3580.7000000000003,
+   "scenario": "ramp_down"
+  },
+  {
+   "start_s": 3580.7000000000003,
+   "end_s": 3600.0,
+   "scenario": "sla_conflict"
+  }
+ ],
+ "split": "train"
+}

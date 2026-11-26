@@ -1,0 +1,52 @@
+{
+ "run_id": "grid/urllc_h64_lr0.002",
+ "model": "predp",
+ "features": "uni",
+ "groups": {
+  "urllc": {
+   "features": [
+    "urllc_req_prb_mean"
+   ],
+   "targets": [
+    "urllc_req_prb_mean"
+   ]
+  }
+ },
+ "horizon_mode": "all",
+ "horizons_selected": [
+  5,
+  10,
+  15
+ ],
+ "model_horizons": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15
+ ],
+ "lookback": 30,
+ "hidden": 64,
+ "dropout": 0.0,
+ "lr": 0.002,
+ "batch_size": 32,
+ "max_epochs": 200,
+ "patience": 15,
+ "median_filter": 1,
+ "seed": 0,
+ "data": "data/raw",
+ "sim_version": "1.0",
+ "train_traces": 25,
+ "train_hours": 25.0,
+ "created": "2026-11-26T12:00:14"
+}
