@@ -1,0 +1,29 @@
+[
+ {
+  "id": "eval-1795676189716",
+  "kind": "eval",
+  "name": "ui_api_test",
+  "pid": 686052,
+  "log": "runs/_logs/eval_ui_api_test.log",
+  "started": 1795676189.716347,
+  "meta": {
+   "out": "ui_api_test"
+  }
+ },
+ {
+  "id": "prens-1795678711048",
+  "kind": "prens",
+  "name": "prens_comparison",
+  "pid": 882570,
+  "log": "runs/_logs/prens_comparison.log",
+  "started": 1795678711.0483024,
+  "meta": {
+   "runs": [
+    "E1/gru_uni_all_s0",
+    "E1/lstm_uni_all_s0",
+    "E1/predp_uni_all_s0",
+    "E1/transformer_uni_all_s0"
+   ]
+  }
+ }
+]

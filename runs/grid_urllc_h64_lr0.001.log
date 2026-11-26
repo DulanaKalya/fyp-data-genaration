@@ -1,0 +1,30 @@
+[urllc] train windows=88,900 val=64,008 test=64,008 params=44,559
+[urllc] ep   1 train 0.00931 val 0.00950 * (6.1s)
+[urllc] ep   2 train 0.00869 val 0.00952   (5.8s)
+[urllc] ep   3 train 0.00862 val 0.00934 * (5.8s)
+[urllc] ep   4 train 0.00857 val 0.00938   (5.8s)
+[urllc] ep   5 train 0.00851 val 0.00932 * (5.9s)
+[urllc] ep   6 train 0.00846 val 0.00927 * (5.7s)
+[urllc] ep   7 train 0.00838 val 0.00938   (4.9s)
+[urllc] ep   8 train 0.00834 val 0.00922 * (5.9s)
+[urllc] ep   9 train 0.00829 val 0.00935   (5.9s)
+[urllc] ep  10 train 0.00825 val 0.00930   (5.9s)
+[urllc] ep  11 train 0.00822 val 0.00926   (5.8s)
+[urllc] ep  12 train 0.00818 val 0.00935   (5.7s)
+[urllc] ep  13 train 0.00815 val 0.00928   (6.3s)
+[urllc] ep  14 train 0.00811 val 0.00926   (5.8s)
+[urllc] ep  15 train 0.00806 val 0.00936   (6.3s)
+[urllc] ep  16 train 0.00802 val 0.00938   (6.0s)
+[urllc] ep  17 train 0.00799 val 0.00944   (5.9s)
+[urllc] ep  18 train 0.00793 val 0.00946   (6.1s)
+[urllc] ep  19 train 0.00789 val 0.00958   (6.2s)
+[urllc] ep  20 train 0.00786 val 0.00942   (5.9s)
+[urllc] ep  21 train 0.00781 val 0.00975   (6.2s)
+[urllc] ep  22 train 0.00775 val 0.00985   (5.9s)
+[urllc] ep  23 train 0.00772 val 0.00970   (5.7s)
+
+Run saved: runs/grid/urllc_h64_lr0.001
+slice    h | RMSE(PRB)    MAE     R2 | persistence RMSE  R2
+urllc    5 |     10.84   7.37  0.514 |     11.31  0.471
+urllc   10 |     12.98   8.90  0.302 |     15.10  0.057
+urllc   15 |     13.81   9.59  0.210 |     16.63 -0.144

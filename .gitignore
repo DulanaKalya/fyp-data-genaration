@@ -14,10 +14,6 @@ ui/dist/
 # Generated dataset (reproducible: python -m datagen.generate, fixed seeds) — 55 MB
 
 # Logs & UI job state
-*.log
-runs/_logs/
-runs/_ui_jobs.json
-
 # Secrets
 .env
 *.env

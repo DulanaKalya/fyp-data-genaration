@@ -1,0 +1,28 @@
+started grid/urllc_h32_lr0.0005
+started grid/urllc_h32_lr0.001
+started grid/urllc_h32_lr0.002
+finished grid/urllc_h32_lr0.0005 rc 0
+finished grid/urllc_h32_lr0.001 rc 0
+started grid/urllc_h64_lr0.0005
+started grid/urllc_h64_lr0.001
+finished grid/urllc_h32_lr0.002 rc 0
+started grid/urllc_h64_lr0.002
+finished grid/urllc_h64_lr0.001 rc 0
+started grid/urllc_h128_lr0.0005
+finished grid/urllc_h64_lr0.0005 rc 0
+started grid/urllc_h128_lr0.001
+finished grid/urllc_h64_lr0.002 rc 0
+started grid/urllc_h128_lr0.002
+finished grid/urllc_h128_lr0.002 rc 1
+finished grid/urllc_h128_lr0.0005 rc 0
+finished grid/urllc_h128_lr0.001 rc 0
+run                           val_loss   ep   R2@5  R2@10  R2@15
+urllc_h64_lr0.002              0.00912   29  0.519  0.307  0.212
+urllc_h64_lr0.0005             0.00916   29  0.515  0.303  0.212
+urllc_h32_lr0.002              0.00917   36  0.517  0.300  0.214
+urllc_h32_lr0.001              0.00919   29  0.516  0.304  0.214
+urllc_h128_lr0.001             0.00921   26  0.519  0.299  0.201
+urllc_h64_lr0.001              0.00922   23  0.514  0.302  0.210
+urllc_h32_lr0.0005             0.00924   29  0.517  0.303  0.211
+urllc_h128_lr0.0005            0.00924   25  0.504  0.299  0.209
+Best (by validation loss): urllc_h64_lr0.002

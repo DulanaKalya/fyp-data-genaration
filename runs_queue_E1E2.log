@@ -1,0 +1,12 @@
+5 jobs queued
+started  E1/lstm_uni_all_s0
+started  E1/gru_uni_all_s0
+finished E1/lstm_uni_all_s0 rc=1 (1 min)
+started  E1/transformer_uni_all_s0
+finished E1/gru_uni_all_s0 rc=0 (26 min)
+started  E2/predp_dedicated_5-10-15_s0
+finished E2/predp_dedicated_5-10-15_s0 rc=0 (28 min)
+started  E2/predp_dedicated_7-9-12_s0
+finished E1/transformer_uni_all_s0 rc=0 (56 min)
+finished E2/predp_dedicated_7-9-12_s0 rc=0 (24 min)
+queue done
