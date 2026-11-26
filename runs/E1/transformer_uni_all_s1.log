@@ -57,3 +57,8 @@
 [urllc] ep   1 train 0.00929 val 0.00758 * (21.1s)
 [urllc] ep   2 train 0.00868 val 0.00758 * (20.7s)
 [urllc] ep   3 train 0.00855 val 0.00747 * (22.4s)
+[urllc] ep   4 train 0.00845 val 0.00744 * (22.6s)
+[urllc] ep   5 train 0.00838 val 0.00735 * (22.2s)
+[urllc] ep   6 train 0.00832 val 0.00736   (21.5s)
+[urllc] ep   7 train 0.00830 val 0.00730 * (20.9s)
+[urllc] ep   8 train 0.00826 val 0.00736   (20.4s)
