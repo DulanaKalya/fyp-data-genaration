@@ -17,3 +17,8 @@ ui/dist/
 # Secrets
 .env
 *.env
+
+# Live UI logs / job state
+runs/_api_server.log
+runs/_ui_jobs.json
+runs/_logs/
