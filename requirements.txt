@@ -1,0 +1,16 @@
+# Python 3.11+. Install PyTorch with CUDA first, for your CUDA version, from https://pytorch.org/get-started/locally/
+# (tested with torch 2.14.1+cu130 on an RTX 4060 Laptop; CPU-only also works, slower)
+torch>=2.2
+numpy>=1.26
+pandas>=2.1
+pyarrow>=14
+scipy>=1.11
+statsmodels>=0.14
+matplotlib>=3.8
+PyYAML>=6.0
+# API / UI backend
+fastapi>=0.110
+uvicorn>=0.29
+python-multipart>=0.0.9
+# tests
+pytest>=7
