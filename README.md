@@ -1,4 +1,4 @@
-# Predictive Network Slice Management for Private 5G — Traffic Prediction
+# Predictive Network Slice Management for Private 5G - Traffic Prediction
 
 Final Year Project, University of Moratuwa (Group 17).
 
