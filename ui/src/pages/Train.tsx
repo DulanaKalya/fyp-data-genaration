@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { BrainCircuit, ChevronDown, Rocket } from 'lucide-react'
 import { api, useApi, type Dataset, type Run } from '../lib/api'
 import { Button, Card, Empty, ErrorBox, Field, LogBox, NumberInput, PageHeader, Segmented, Select, Spinner, StatusBadge, TextInput } from '../components/ui'
-import { HorizonPicker, hValid } from '../components/HorizonPicker'
+import { HorizonPicker, hValid, H_MIN, H_MAX } from '../components/HorizonPicker'
 import { XYChart } from '../components/charts'
 import { SLICE_COLOR, SLICE_LABEL, fmt, methodColor } from '../lib/theme'
 
@@ -59,7 +59,7 @@ export default function TrainPage() {
       <PageHeader icon={<BrainCircuit className="h-5 w-5" />} title="Train" subtitle="Pick the prediction horizons and train a model — progress updates live" />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <div className="space-y-5">
-          <Card title="1 · Prediction horizons" subtitle="Each between 5 and 15 s">
+          <Card title="1 · Prediction horizons" subtitle={`Each between ${H_MIN} and ${H_MAX} s`}>
             <HorizonPicker value={H} onChange={setH} />
             <div className="mt-4">
               <Segmented value={mode} onChange={setMode} options={[{ value: 'all', label: 'All horizons (1–15 s)' }, { value: 'dedicated', label: 'Dedicated (3 outputs)' }]} />

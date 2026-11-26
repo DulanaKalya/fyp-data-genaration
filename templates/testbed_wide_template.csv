@@ -1,0 +1,4 @@
+timestamp,embb_req_prb_mean,urllc_req_prb_mean,mmtc_req_prb_mean,scenario
+1764140000,40.0,12.0,5.0,stable
+1764140001,42.5,30.0,5.5,burst
+1764140002,41.0,28.5,4.0,burst

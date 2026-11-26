@@ -30,7 +30,7 @@ def parse():
     ap.add_argument("--data", default="data/raw")
     ap.add_argument("--runs", default="runs")
     ap.add_argument("--run-name", default=None)
-    ap.add_argument("--horizons", type=int, nargs=3, default=[5, 10, 15], help="H1 H2 H3 (5..15 s)")
+    ap.add_argument("--horizons", type=int, nargs=3, default=[5, 10, 15], help="H1 H2 H3 (1..15 s)")
     ap.add_argument("--horizon-mode", choices=["all", "dedicated"], default="all")
     ap.add_argument("--features", choices=["uni", "multi"], default="uni")
     ap.add_argument("--slices", nargs="+", default=SLICES, help="uni mode: which slice models to train")
@@ -43,14 +43,27 @@ def parse():
     ap.add_argument("--max-epochs", type=int, default=200)
     ap.add_argument("--patience", type=int, default=20)
     ap.add_argument("--median-filter", type=int, default=1)
+    ap.add_argument("--target-mode", choices=["level", "residual"], default="level",
+                    help="residual (E9): predict the change from the last value, inputs relative to it")
     ap.add_argument("--train-traces", type=int, default=None, help="use only the first N train traces")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--progress-file", default=None, help="JSON progress for the UI")
+    ap.add_argument("--init-from", default=None,
+                    help="fine-tune (E7): start from this run's weights; reuses its scaler and model settings")
     a = ap.parse_args()
+    if a.init_from:     # architecture / preprocessing must match the base run
+        base = json.load(open(os.path.join(a.init_from, "config.json")))
+        for k in ("model", "features", "horizon_mode", "lookback", "hidden", "dropout", "median_filter"):
+            setattr(a, k, base[k])
+        a.target_mode = base.get("target_mode", "level")
+        if base["horizon_mode"] == "dedicated":
+            a.horizons = base["horizons_selected"]
+        if a.features == "uni":
+            a.slices = [s for s in a.slices if s in base["groups"]]
     h = sorted(a.horizons)
-    if not (5 <= h[0] < h[1] < h[2] <= 15):
-        ap.error("horizons must satisfy 5 <= H1 < H2 < H3 <= 15")
+    if not (1 <= h[0] < h[1] < h[2] <= MAX_H):
+        ap.error("horizons must satisfy 1 <= H1 < H2 < H3 <= 15")
     a.horizons = h
     return a
 
@@ -93,7 +106,13 @@ def train_group(name, feat_cols, tgt_cols, data, scaler, a, model_h, run_dir, pr
         sets[split] = WindowSet(Xs, Ys, a.lookback, model_h, device=dev)
     n_t, K = len(tgt_cols), len(model_h)
     torch.manual_seed(a.seed)
-    model = build_model(a.model, len(feat_cols), n_t * K, hidden=a.hidden, dropout=a.dropout).to(dev)
+    ridx = [feat_cols.index(c) for c in tgt_cols] if a.target_mode == "residual" else None
+    model = build_model(a.model, len(feat_cols), n_t * K, residual_idx=ridx,
+                        hidden=a.hidden, dropout=a.dropout).to(dev)
+    if a.init_from:
+        model.load_state_dict(torch.load(os.path.join(a.init_from, f"model_{name}.pt"), map_location=dev,
+                                         weights_only=True))
+        print(f"[{name}] initialised from {a.init_from}")
     opt = torch.optim.Adam(model.parameters(), lr=a.lr)
     lossf = nn.MSELoss()
     gen = torch.Generator(device=dev); gen.manual_seed(a.seed)
@@ -181,16 +200,20 @@ def main():
     else:
         groups = {"joint": (feature_columns("multi"), [target_col(s) for s in SLICES])}
     all_cols = sorted({c for f, t in groups.values() for c in f + t})
-    scaler = MinMaxScaler().fit(data["train"], all_cols)
+    if a.init_from:      # keep the base scaler so the pretrained weights see the same input scale
+        scaler = MinMaxScaler.from_dict(json.load(open(os.path.join(a.init_from, "scaler.json"))))
+    else:
+        scaler = MinMaxScaler().fit(data["train"], all_cols)
 
     config = {"run_id": run_id, "model": a.model, "features": a.features, "groups":
               {g: {"features": f, "targets": t} for g, (f, t) in groups.items()},
               "horizon_mode": a.horizon_mode, "horizons_selected": a.horizons, "model_horizons": model_h,
               "lookback": a.lookback, "hidden": a.hidden, "dropout": a.dropout, "lr": a.lr,
               "batch_size": a.batch_size, "max_epochs": a.max_epochs, "patience": a.patience,
-              "median_filter": a.median_filter, "seed": a.seed, "data": a.data,
+              "median_filter": a.median_filter, "target_mode": a.target_mode, "seed": a.seed, "data": a.data,
               "sim_version": manifest["sim_version"],
-              "train_traces": len(data["train"]), "train_hours": len(data["train"]) * len(data["train"][0]) / 3600,
+              "train_traces": len(data["train"]), "train_hours": sum(len(d) for d in data["train"]) / 3600,
+              "init_from": a.init_from,
               "created": datetime.now().isoformat(timespec="seconds")}
     with open(os.path.join(run_dir, "config.json"), "w") as f:
         json.dump(config, f, indent=1)

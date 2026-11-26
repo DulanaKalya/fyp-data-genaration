@@ -56,3 +56,16 @@ def test_scaler_fit_on_train_only():
     s = MinMaxScaler().fit(tr, ["a"])
     assert s.transform(te, ["a"])[0, 0] == 2.0             # test values may exceed [0,1]
     assert s.inverse(0.5, "a") == 5.0
+
+
+def test_residual_wrapper_is_level_invariant():
+    """E9: shifting the target history by a constant shifts the prediction by the same constant."""
+    import torch
+    from models.predp import build_model
+    torch.manual_seed(0)
+    m = build_model("predp", 1, 15, residual_idx=[0], hidden=8).eval()
+    x = torch.rand(4, 30, 1)
+    with torch.no_grad():
+        d = m(x + 0.3) - m(x)
+    assert torch.allclose(d, torch.full_like(d, 0.3), atol=1e-5)
+    assert m(x).shape == (4, 15)

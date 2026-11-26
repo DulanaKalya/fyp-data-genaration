@@ -33,6 +33,8 @@ def jobs_for(exp, seed):
     elif exp == "E8":     # learning curve (train hours)
         for n in (10, 25, 50):
             J.append((f"E8/predp_{n}h_s{seed}", ["--train-traces", str(n)] + base))
+    elif exp == "E9":     # level-invariant residual target (fix for the E6 OOD weakness)
+        J.append((f"E9/predp_residual_s{seed}", ["--target-mode", "residual"] + base))
     else:
         raise ValueError(exp)
     return J

@@ -132,8 +132,8 @@ def predictor(run):
 
 def check_h(h):
     h = sorted(h)
-    if len(h) != 3 or not (h[0] < h[1] < h[2]):
-        raise HTTPException(400, "need three horizons H1 < H2 < H3")
+    if len(h) != 3 or not (1 <= h[0] < h[1] < h[2] <= 15):
+        raise HTTPException(400, "need three horizons 1 <= H1 < H2 < H3 <= 15")
     return h
 
 
@@ -157,7 +157,15 @@ def overview():
 def list_datasets():
     out = []
     if os.path.isdir(DATA):
-        for name in sorted(os.listdir(DATA)):
+        names = []
+        for name in sorted(os.listdir(DATA)):          # data/<name> and one level deeper (data/testbed/<name>)
+            if name.startswith("_"):
+                continue
+            names.append(name)
+            sub = os.path.join(DATA, name)
+            if os.path.isdir(sub) and not os.path.exists(os.path.join(sub, "manifest.json")):
+                names += [f"{name}/{n}" for n in sorted(os.listdir(sub))]
+        for name in names:
             d = os.path.join(DATA, name)
             if os.path.exists(os.path.join(d, "manifest.json")):
                 m = manifest(d)
@@ -317,8 +325,8 @@ class TrainReq(BaseModel):
 @app.post("/api/train")
 def start_train(req: TrainReq):
     h = check_h(req.horizons)
-    if not (5 <= h[0] and h[2] <= 15):
-        raise HTTPException(400, "horizons must be within 5–15 s")
+    if not (1 <= h[0] and h[2] <= 15):
+        raise HTTPException(400, "horizons must be within 1–15 s")
     if req.model not in ("predp", "lstm", "gru", "transformer") or req.features not in ("uni", "multi") \
             or req.horizon_mode not in ("all", "dedicated"):
         raise HTTPException(400, "invalid model/features/mode")
@@ -589,4 +597,5 @@ def spa(path: str):
     index = os.path.join(UI_DIST, "index.html")
     if not os.path.exists(index):
         return PlainTextResponse("UI not built. Run: cd ui && npm install && npm run build", status_code=503)
-    return FileResponse(index)
+    # never cache index.html: it names the current hashed JS bundle, which changes on every build
+    return FileResponse(index, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})

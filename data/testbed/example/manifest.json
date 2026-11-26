@@ -1,0 +1,82 @@
+{
+ "sim_version": "testbed",
+ "config": {
+  "source": "/home/dulana-karunathilake/Desktop/Data genaration/templates/testbed_kpm_long_example.csv",
+  "mapping": "configs/testbed_map.yaml",
+  "imported": "2026-11-26T14:58:42",
+  "trace_hours": 0.083,
+  "out_dt_s": 1.0,
+  "radio": {
+   "total_prb": 162
+  },
+  "chunk_min": 5.0,
+  "split_fractions": [
+   0.7,
+   0.15,
+   0.15
+  ],
+  "max_gap_s": 30,
+  "derived": {
+   "embb_req_prb_max": "req_prb_mean",
+   "embb_req_prb_p95": "req_prb_mean",
+   "embb_unmet_prb": "0.0",
+   "urllc_req_prb_max": "req_prb_mean",
+   "urllc_req_prb_p95": "req_prb_mean",
+   "urllc_unmet_prb": "0.0",
+   "mmtc_req_prb_max": "req_prb_mean",
+   "mmtc_req_prb_p95": "req_prb_mean",
+   "mmtc_unmet_prb": "0.0"
+  },
+  "rows_over_1.5x_total_prb": 0
+ },
+ "splits": {
+  "train": [
+   "train_000",
+   "train_001",
+   "train_002",
+   "train_003",
+   "train_004",
+   "train_005"
+  ],
+  "val": [
+   "val_000"
+  ],
+  "test": [
+   "test_000"
+  ]
+ },
+ "traces": {
+  "train_000": {
+   "split": "train",
+   "profile": "testbed"
+  },
+  "train_001": {
+   "split": "train",
+   "profile": "testbed"
+  },
+  "train_002": {
+   "split": "train",
+   "profile": "testbed"
+  },
+  "train_003": {
+   "split": "train",
+   "profile": "testbed"
+  },
+  "train_004": {
+   "split": "train",
+   "profile": "testbed"
+  },
+  "train_005": {
+   "split": "train",
+   "profile": "testbed"
+  },
+  "val_000": {
+   "split": "val",
+   "profile": "testbed"
+  },
+  "test_000": {
+   "split": "test",
+   "profile": "testbed"
+  }
+ }
+}

@@ -2,7 +2,11 @@ import { Timer } from 'lucide-react'
 import { HORIZON_COLORS } from '../lib/theme'
 
 /** Three horizon selectors with H1 < H2 < H3. `allowed` limits the choices (e.g. a dedicated model's horizons). */
-export function HorizonPicker({ value, onChange, allowed = range(5, 15) }:
+/** System-wide horizon range (seconds). 'all'-mode models output every horizon in it. */
+export const H_MIN = 1
+export const H_MAX = 15
+
+export function HorizonPicker({ value, onChange, allowed = range(H_MIN, H_MAX) }:
   { value: number[]; onChange: (h: number[]) => void; allowed?: number[] }) {
   const valid = value[0] < value[1] && value[1] < value[2]
   const set = (i: number, v: number) => {

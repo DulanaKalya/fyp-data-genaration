@@ -1,0 +1,34 @@
+# Mapping from a testbed KPI export (E2 KPM, xApp log, ...) to the dataset columns.
+# Used by:  python -m prep.testbed --input <file> --map configs/testbed_map.yaml --name <name>
+# Edit the RIGHT-hand side to match the column names in your export.
+
+time:
+  column: timestamp        # epoch seconds, epoch milliseconds or ISO text
+  unit: auto               # auto | s | ms | iso
+
+# long = one row per (time, slice)   (typical KPM export, one report per slice)
+# wide = one row per time, columns per slice; then use full names below, e.g. embb_req_prb_mean: embb_prb_demand
+format: long
+slice_column: slice_id
+slice_values:              # value in slice_column -> slice name (SST 1 = eMBB, 2 = URLLC, 3 = mMTC/MIoT)
+  "1": embb
+  "2": urllc
+  "3": mmtc
+
+# our metric: your column            (only req_prb_mean is required; the rest are optional)
+columns:
+  req_prb_mean: prb_demand          # PRBs the slice NEEDED (buffer-based demand). Prediction target.
+  granted_prb:  RRU.PrbUsedDl       # PRBs actually allocated (if no demand KPI, this is used as the target)
+  active_ues:   RRC.ConnMean
+  thr_mbps:     DRB.UEThpDl
+  cqi_mean:     CQI.Mean
+  buffer_kb:    DRB.BufferSizeDl
+  latency_ms_p95: DRB.RlcSduDelayDl
+
+scale:                     # multiply after reading (unit conversion)
+  thr_mbps: 0.001          # kbps -> Mbps
+  buffer_kb: 0.001         # bytes -> kB
+  latency_ms_p95: 0.001    # us -> ms
+
+# optional: column with the traffic scenario you ran (stable, burst, ...); shown as shading in the UI
+label_column: scenario

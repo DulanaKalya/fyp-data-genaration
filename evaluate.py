@@ -221,7 +221,7 @@ def main():
                 ys = [res[m][s][str(h)][metric] for h in H]
                 st = BASE_STYLE.get(m, {})
                 ax.plot(H, ys, marker="o" if m not in BASE_STYLE else None, ms=3, label=m, **st)
-            ax.axvspan(5, 15, color="grey", alpha=0.08)
+            ax.axvspan(1, 15, color="grey", alpha=0.08)
             ax.set(title=f"{s.upper()}", xlabel="horizon (s)", ylabel=metric.upper() + (" (PRBs)" if metric == "rmse" else ""))
             ax.grid(alpha=0.3)
         axs[0].legend(fontsize=7)
@@ -234,15 +234,16 @@ def main():
     t, pr, _ = p.predict_df(d, [h1, h3])
     fig, axs = plt.subplots(len(pr), 1, figsize=(16, 3.2 * len(pr)), sharex=True)
     axs = np.atleast_1d(axs)
-    win = (t + h3) < 15 * 60
+    n = min(15 * 60, len(d))                     # testbed traces can be shorter than 15 min
+    win = (t + h3) < n
     for ax, s in zip(axs, pr):
         y = d[target_col(s)].to_numpy()
-        ax.plot(np.arange(15 * 60) / 60, y[:15 * 60], color=COLORS[s], lw=1.2, label="actual")
-        ax.plot((t[win] + h1) / 60, pr[s][win, 0], color="orange", lw=0.9, label=f"predicted {h1}s ahead")
-        ax.plot((t[win] + h3) / 60, pr[s][win, 1], color="purple", lw=0.9, alpha=0.8, label=f"predicted {h3}s ahead")
+        ax.plot(np.arange(n) / 60, y[:n], color=COLORS[s], lw=1.2, label="actual")
+        ax.plot((t[win] + h1) / 60, pr[s][win, 0], color="orange", lw=0.9, label=f"predicted {h1} s earlier (made at t−{h1})")
+        ax.plot((t[win] + h3) / 60, pr[s][win, 1], color="purple", lw=0.9, alpha=0.8, label=f"predicted {h3} s earlier (made at t−{h3})")
         ax.set_ylabel(f"{s.upper()} PRBs"); ax.legend(fontsize=8, loc="upper right"); ax.grid(alpha=0.3)
     axs[-1].set_xlabel("time (min)")
-    fig.suptitle(f"{p.name} — {a.split} trace {d['trace_id'].iloc[0]} (prediction plotted at its target time)")
+    fig.suptitle(f"{p.name} — {a.split} trace {d['trace_id'].iloc[0]} (each prediction is drawn at the time it is FOR; it was made h s earlier)")
     fig.tight_layout(); fig.savefig(os.path.join(out, "predictions_vs_actual.png"), dpi=110); plt.close(fig)
 
     print("\n".join(lines[:4 + 6 * 3 + 20]))

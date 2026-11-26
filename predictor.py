@@ -22,8 +22,10 @@ class Predictor:
         self.conf = Confidence.load(run_dir)     # None until `python confidence.py --run ...` has been run
         self.models = {}
         for g, spec in self.cfg["groups"].items():
+            ridx = [spec["features"].index(c) for c in spec["targets"]] \
+                if self.cfg.get("target_mode", "level") == "residual" else None
             m = build_model(self.cfg["model"], len(spec["features"]),
-                            len(spec["targets"]) * len(self.model_h),
+                            len(spec["targets"]) * len(self.model_h), residual_idx=ridx,
                             hidden=self.cfg["hidden"], dropout=self.cfg.get("dropout", 0.0))
             sd = torch.load(os.path.join(run_dir, f"model_{g}.pt"), map_location=self.device, weights_only=True)
             m.load_state_dict(sd)

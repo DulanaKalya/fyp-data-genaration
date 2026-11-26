@@ -1,0 +1,8 @@
+{
+ "trace_id": "train_005",
+ "profile": "testbed",
+ "source": "testbed_kpm_long_example.csv",
+ "start_epoch_s": 1764141500.002,
+ "seconds": 300,
+ "missing_s": 0
+}

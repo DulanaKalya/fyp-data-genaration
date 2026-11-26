@@ -2,13 +2,13 @@
 
 Final Year Project, University of Moratuwa (Group 17).
 
-This repository holds the **prediction part** of the system. It forecasts how many PRBs each network slice (eMBB, URLLC, mMTC) will **request** 5–15 s ahead, together with a **confidence** value. Each forecast is sent as an A1 package so the RIC can reserve resources before the demand arrives.
+This repository holds the **prediction part** of the system. It forecasts how many PRBs each network slice (eMBB, URLLC, mMTC) will **request** 1–15 s ahead, together with a **confidence** value. Each forecast is sent as an A1 package so the RIC can reserve resources before the demand arrives.
 
 It contains:
 
 1. **A 5G traffic simulator** matched to our testbed. It generates the training dataset (130 h, sampled at 1 s).
 2. **PreDP**, the attention Bi-LSTM from the PreNS paper. It ships with UT-LSTM, UT-GRU, UT-Transformer, ARIMA, persistence and moving-average baselines.
-3. **Any 3 horizons between 5 and 15 s**, for example 5/10/15 or 7/9/12. One model predicts every horizon from 1 to 15 s, so changing the horizons needs no retraining.
+3. **Any 3 horizons between 1 and 15 s**, for example 5/10/15, 7/9/12 or 1/3/5. One model predicts every horizon from 1 to 15 s, so changing the horizons needs no retraining.
 4. **Confidence calibration.** Confidence comes from the error of recent predictions whose true values are now known.
 5. **A web UI (React + FastAPI)** to explore the data, train, evaluate, compare with PreNS and run live inference.
 
@@ -63,10 +63,10 @@ Every step can also be run from the UI. Trained runs are saved in `runs/`, so th
 | PRBs | **162** |
 | UEs | 9: 3 eMBB, 3 URLLC, 3 mMTC |
 | Sampling | **1 s**. Simulated at 100 ms and aggregated as mean, max and p95. |
-| Prediction horizons | 3 horizons chosen from **5–15 s** |
+| Prediction horizons | 3 horizons chosen from **1–15 s** |
 | Target | Requested PRBs per slice (`<slice>_req_prb_mean`), not allocated PRBs |
 
-We sample at 1 s instead of PreNS's 100 ms because our horizons are 5–15 s. A 100 ms resolution would only add noise and make the windows 10× larger.
+We sample at 1 s instead of PreNS's 100 ms because our horizons are 1–15 s. A 100 ms resolution would only add noise and make the windows 10× larger.
 
 ---
 
@@ -74,6 +74,8 @@ We sample at 1 s instead of PreNS's 100 ms because our horizons are 5–15 s. A 
 
 ```
 configs/sim.yaml          simulator configuration (radio, slices, traffic ranges, scenarios)
+configs/testbed_map.yaml  column mapping for testbed KPI imports
+templates/                example testbed KPM export (long) and a wide CSV template
 datagen/                  traffic simulator
   scenarios.py            Markov scenario scheduler and load-intensity curves
   channel.py              CQI process (AR(1) plus blockage) → spectral efficiency → PRB capacity
@@ -85,6 +87,7 @@ datagen/                  traffic simulator
   plot_trace.py           plot requested vs allocated PRBs
 prep/
   data.py                 load splits, causal median filter, min-max scaler (fitted on train only)
+  testbed.py              import testbed KPI exports (E2 KPM) into the dataset format
   windows.py              sliding windows that never cross trace boundaries (GPU-backed WindowSet)
 models/
   predp.py                PreDP attention Bi-LSTM and build_model()
@@ -160,7 +163,7 @@ The data is predictable, but not trivially: simply repeating the last value gets
 ```bash
 python train.py --data data/raw \
     --model predp            # predp | lstm | gru | transformer
-    --horizons 5 10 15       # any H1 < H2 < H3 within 5..15
+    --horizons 5 10 15       # any H1 < H2 < H3 within 1..15
     --horizon-mode all       # all = outputs for 1..15 s (serve any horizons later) | dedicated = 3 outputs only
     --features uni           # uni = target history only | multi = also CQI, active UEs, backlog, ...
     --lookback 30            # input window, in seconds
@@ -254,7 +257,7 @@ preds = P.predict_df(df, horizons=[7, 9, 12])     # requested PRBs, clipped at �
 |---|---|
 | **Overview** | Datasets, runs, the best results and running jobs |
 | **Dataset** | Quality checks, ACF and persistence charts, a trace viewer with scenario shading, generating new datasets |
-| **Train** | Choose the model, features, slices and **3 horizons (5–15 s)**, then train with a live loss chart and see the results |
+| **Train** | Choose the model, features, slices and **3 horizons (1–15 s)**, then train with a live loss chart and see the results |
 | **Evaluate** | Compare runs with the baselines. The **PreNS paper comparison** tab shows accuracy, same-window R², ranking, per-slice results and cost. |
 | **Inference** | Forecast with confidence for any horizons, replay a trace in real time, upload your own KPI file, export A1 JSON Lines |
 
@@ -308,24 +311,50 @@ Run with `python experiments/queue.py --exp E1 E3 --seeds 0 1 2 --parallel 2`. T
 | E3 | Do extra features (CQI, active UEs, backlog) help? | `runs/E3/` | pending |
 | E4 | Lookback of 20 s or 60 s instead of 30 s | `runs/E4/` | pending |
 | E5 | Effect of turning off the median filter | `runs/E5/` | pending |
-| E6 | Out-of-distribution test (`evaluate.py --split ood`) | — | pending |
-| E7 | Fine-tuning on real testbed data | — | needs testbed traces |
+| E6 | Out-of-distribution test (`evaluate.py --split ood`) | `reports/eval/E6_ood_ood/` | ✅ weakness found (below) |
+| E7 | Fine-tuning on real testbed data (`train.py --init-from`) | — | needs testbed traces |
 | E8 | Learning curve: 10 / 25 / 50 h of training data | `runs/E8/` | pending |
+| E9 | Level-invariant target (`--target-mode residual`): predicts the change from the last value | `runs/E9/` | pending |
+
+The whole remaining set runs overnight with `experiments/run_remaining.sh`, which logs to `runs/_logs/remaining.log`.
+
+**E6 result:** on the OOD traces PreDP is worse than persistence for eMBB and URLLC. For URLLC the RMSE skill is −41 % at 5 s and −12 % at 15 s; mMTC still wins at 10–15 s. In the OOD profile:
+- URLLC bursts last 10–25 s, and 40 % of the time is spent in burst, contention or sla_conflict (23 % in training).
+- URLLC lag-5 autocorrelation is 0.89, compared with 0.70 in training.
+- Average URLLC demand is 2.6× higher.
+
+The model has learned that bursts end quickly, so it predicts a drop that doesn't happen. Wider training variety or fine-tuning on testbed data (E7) is therefore needed before deployment. E9 targets the level-shift part of the problem.
 | grid | Hidden × learning rate on URLLC | `runs/grid/` | ✅ |
 
 ---
 
 ## Using real testbed data
 
-The model takes a 1 s table with the same column names as the simulator. For a univariate run it needs `t` and `<slice>_req_prb_mean`.
+`prep/testbed.py` converts a testbed KPI export into the same dataset format as `data/raw/`. The output can then be used for evaluation, fine-tuning and the UI.
 
-1. Collect E2 KPM reports with a **1000 ms report period** and resample to 1 s if needed. Use the PRBs requested per slice, or the buffer-based PRB demand.
-2. Rename the columns to `embb_req_prb_mean`, `urllc_req_prb_mean` and `mmtc_req_prb_mean`.
-3. Upload the file on the **Inference** page, or run `infer.py --file`.
+1. Collect E2 KPM reports with a **1000 ms report period**. Log the PRB **demand** per slice (buffer-based), not only the PRBs used. If you can, also log the traffic scenario you ran.
+2. Point [`configs/testbed_map.yaml`](configs/testbed_map.yaml) at your column names. It accepts both layouts:
+   - **long:** one row per time and slice (SST 1/2/3), like [`templates/testbed_kpm_long_example.csv`](templates/testbed_kpm_long_example.csv)
+   - **wide:** one row per time, like [`templates/testbed_wide_template.csv`](templates/testbed_wide_template.csv)
+3. Import:
+   ```bash
+   python -m prep.testbed --input my_kpm.csv --map configs/testbed_map.yaml --name day1
+   # → data/testbed/day1/  (1 s rows, cut at gaps > 30 s, 10 min traces, chronological 70/15/15 split)
+   ```
+   - Timestamps are rounded to the nearest second, so report jitter doesn't matter.
+   - Gaps of 2 s or less are interpolated later.
+   - KPIs missing from the file are filled from the demand column and listed in `manifest.json`.
+4. Use it:
+   ```bash
+   # how does the simulator-trained model do on real data?
+   python evaluate.py --data data/testbed/day1 --runs predp_uni_all_5-10-15_full --split test --arima-n 500
+   # E7: fine-tune from the simulator model (same scaler and architecture, low learning rate)
+   python train.py --data data/testbed/day1 --init-from runs/predp_uni_all_5-10-15_full \
+                   --lr 1e-4 --patience 10 --run-name E7/predp_finetune_day1
+   ```
+   The imported dataset also appears in the UI (Dataset and Train pages). You can upload a single file for inference on the **Inference** page.
 
-Planned next steps:
-- Calibrate `se_scale` in `configs/sim.yaml` with iperf3 tests per slice.
-- Fine-tune on 3–5 h of testbed traces (E7).
+Still to do on the testbed: calibrate `se_scale` in `configs/sim.yaml` with iperf3 tests per slice.
 
 ---
 

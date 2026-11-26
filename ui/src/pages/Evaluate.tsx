@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { BarChart3, Play } from 'lucide-react'
 import { api, useApi, SLICES, type Job, type Run } from '../lib/api'
 import { Badge, Button, Card, Empty, ErrorBox, Field, LogBox, NumberInput, PageHeader, Select, Spinner, TextInput } from '../components/ui'
-import { HorizonPicker, hValid, range } from '../components/HorizonPicker'
+import { HorizonPicker, hValid, range, H_MIN, H_MAX } from '../components/HorizonPicker'
 import { XYChart } from '../components/charts'
 import { Tabs } from '../components/ui'
 import PrensComparison from './PrensComparison'
@@ -53,7 +53,7 @@ function NewEval({ runs, onFinished }: { runs: Run[] | null; onFinished: (tag: s
     setTag(sel.length ? `ui_${sel.map((s) => s.split('/').pop()).join('_vs_')}`.slice(0, 70).replace(/[^A-Za-z0-9_\-]/g, '_') : '')
   }, [sel.join(',')])
   const allMode = sel.length > 0 && runs?.filter((r) => sel.includes(r.id)).every((r) => r.horizon_mode === 'all')
-  const allowed = allMode ? range(1, 15) : (runs?.find((r) => r.id === sel[0])?.model_horizons ?? range(5, 15))
+  const allowed = allMode ? range(H_MIN, H_MAX) : (runs?.find((r) => r.id === sel[0])?.model_horizons ?? range(H_MIN, H_MAX))
   const run = async () => {
     setErr(null)
     try {
@@ -196,7 +196,7 @@ function Report({ tag }: { tag: string }) {
         </Card>
       </div>
       {R.images?.includes('predictions_vs_actual.png') && (
-        <Card title="Predictions vs actual" subtitle="First test trace, first 15 min (from evaluate.py)">
+        <Card title="Predictions vs actual" subtitle={`First ${R.split ?? 'test'} trace, first 15 min — each prediction is drawn at the time it is for (made h s earlier)`}>
           <img className="w-full" src={api.url('/reports/image', { tag, name: 'predictions_vs_actual.png' })} />
         </Card>
       )}

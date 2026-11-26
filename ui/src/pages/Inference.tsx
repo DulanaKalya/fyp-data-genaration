@@ -3,7 +3,7 @@ import { Download, Pause, Play, Sparkles, Upload } from 'lucide-react'
 import { CartesianGrid, ComposedChart, Legend, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Scatter, Tooltip, XAxis, YAxis } from 'recharts'
 import { api, useApi, type Dataset, type Run } from '../lib/api'
 import { Badge, Button, Card, Empty, ErrorBox, Field, NumberInput, PageHeader, Segmented, Select, Spinner, Stat, Tabs } from '../components/ui'
-import { HorizonPicker, hValid, range } from '../components/HorizonPicker'
+import { HorizonPicker, hValid, range, H_MIN, H_MAX } from '../components/HorizonPicker'
 import { ScenarioLegend, TimeChart, XYChart } from '../components/charts'
 import { HORIZON_COLORS, SLICE_COLOR, SLICE_LABEL, confColor, fmt } from '../lib/theme'
 
@@ -19,7 +19,7 @@ export default function InferencePage() {
       setRunId(pref.id)
     }
   }, [runs])
-  const allowed = run ? (run.horizon_mode === 'all' ? range(5, 15).filter((h) => run.model_horizons.includes(h)) : run.model_horizons) : range(5, 15)
+  const allowed = run ? (run.horizon_mode === 'all' ? range(H_MIN, H_MAX).filter((h) => run.model_horizons.includes(h)) : run.model_horizons) : range(5, 15)
   const [H, setH] = useState([5, 10, 15])
   useEffect(() => { if (run) setH(run.horizons_selected.every((h) => allowed.includes(h)) ? run.horizons_selected : allowed.slice(0, 3)) }, [run?.id])
 
@@ -101,13 +101,15 @@ function Forecast({ run, source, H }: { run: Run; source: Src; H: number[] }) {
   const [start, setStart] = useState(10)
   const [len, setLen] = useState(10)
   const { data: f, loading, error } = useApi<any>('/infer/forecast', { run: run.id, ...source, h: H, start: start * 60, end: (start + len) * 60 })
+  // Use the horizons this response was computed for: while a new request loads, `f` still holds the old one.
+  const FH: number[] = f?.horizons ?? H
   const rows = useMemo(() => {
     if (!f) return []
     return f.t.map((t: number, i: number) => {
       const o: any = { x: t / 60 }
       for (const s of Object.keys(f.slices)) {
         o[`${s}_actual`] = f.slices[s].actual[i]
-        H.forEach((h) => { o[`${s}_h${h}`] = f.slices[s][`h${h}`]?.[i]; o[`${s}_c${h}`] = f.slices[s][`c${h}`]?.[i] })
+        FH.forEach((h) => { o[`${s}_h${h}`] = f.slices[s][`h${h}`]?.[i]; o[`${s}_c${h}`] = f.slices[s][`c${h}`]?.[i] })
       }
       return o
     })
@@ -126,11 +128,11 @@ function Forecast({ run, source, H }: { run: Run; source: Src; H: number[] }) {
             <div className="mb-1 text-sm font-semibold" style={{ color: SLICE_COLOR[s] }}>{SLICE_LABEL[s]}</div>
             <TimeChart data={rows} segments={f.segments} height={220} series={[
               { key: `${s}_actual`, name: 'actual', color: SLICE_COLOR[s], width: 2.2 },
-              ...H.map((h, k) => ({ key: `${s}_h${h}`, name: `predicted ${h} s ahead`, color: HORIZON_COLORS[k], width: 1.3, dash: k === 0 ? undefined : k === 1 ? '6 3' : '2 3' })),
+              ...FH.map((h, k) => ({ key: `${s}_h${h}`, name: `predicted ${h} s earlier`, color: HORIZON_COLORS[k], width: 1.3, dash: k === 0 ? undefined : k === 1 ? '6 3' : '2 3' })),
             ]} />
             {f.has_confidence && (
               <TimeChart data={rows} segments={f.segments} height={120} yLabel="confidence" series={
-                H.map((h, k) => ({ key: `${s}_c${h}`, name: `C ${h} s`, color: HORIZON_COLORS[k], width: 1.2, dash: k === 0 ? undefined : k === 1 ? '6 3' : '2 3' }))} />
+                FH.map((h, k) => ({ key: `${s}_c${h}`, name: `C ${h} s`, color: HORIZON_COLORS[k], width: 1.2, dash: k === 0 ? undefined : k === 1 ? '6 3' : '2 3' }))} />
             )}
           </div>
         ))}
@@ -145,10 +147,10 @@ function Forecast({ run, source, H }: { run: Run; source: Src; H: number[] }) {
                 <div className="mb-2 font-semibold" style={{ color: SLICE_COLOR[s] }}>{SLICE_LABEL[s]}</div>
                 <table className="w-full text-sm">
                   <thead><tr className="text-left text-xs text-slate-400"><th>h</th><th>RMSE</th><th>R²</th><th>persist.</th></tr></thead>
-                  <tbody>{H.map((h) => (
-                    <tr key={h}><td className="py-0.5">{h} s</td><td>{fmt(f.metrics[s][String(h)].rmse)}</td>
-                      <td className="font-semibold">{fmt(f.metrics[s][String(h)].r2, 3)}</td>
-                      <td className="text-slate-500">{fmt(f.metrics[s].persistence[String(h)], 3)}</td></tr>
+                  <tbody>{FH.map((h) => (
+                    <tr key={h}><td className="py-0.5">{h} s</td><td>{fmt(f.metrics[s][String(h)]?.rmse)}</td>
+                      <td className="font-semibold">{fmt(f.metrics[s][String(h)]?.r2, 3)}</td>
+                      <td className="text-slate-500">{fmt(f.metrics[s].persistence?.[String(h)], 3)}</td></tr>
                   ))}</tbody>
                 </table>
               </div>
@@ -190,7 +192,7 @@ function Replay({ run, source, H }: { run: Run; source: Src; H: number[] }) {
         <ErrorBox error={error} />
         {r && (
           <div className="grid gap-4 lg:grid-cols-3">
-            {Object.keys(r.slices).map((s) => <ReplayChart key={s} s={s} d={r.slices[s]} lookback={r.lookback} H={H} />)}
+            {Object.keys(r.slices).map((s) => <ReplayChart key={s} s={s} d={r.slices[s]} lookback={r.lookback} H={r.horizons ?? H} />)}
           </div>
         )}
       </Card>

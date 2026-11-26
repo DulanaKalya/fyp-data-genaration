@@ -1,4 +1,5 @@
-import { NavLink, Route, Routes } from 'react-router-dom'
+import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { BarChart3, BrainCircuit, Database, LayoutDashboard, Radio, Sparkles } from 'lucide-react'
 import { useApi } from './lib/api'
 import Overview from './pages/Overview'
@@ -16,6 +17,7 @@ const NAV = [
 ]
 
 export default function App() {
+  const location = useLocation()
   const { data: health } = useApi<any>('/health')
   const { data: ov } = useApi<any>('/overview', undefined, 5000)
   return (
@@ -50,6 +52,7 @@ export default function App() {
       </aside>
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-7xl px-8 py-8">
+          <ErrorBoundary resetKey={location.pathname}>
           <Routes>
             <Route path="/" element={<Overview />} />
             <Route path="/dataset" element={<DatasetPage />} />
@@ -57,6 +60,7 @@ export default function App() {
             <Route path="/evaluate" element={<EvaluatePage />} />
             <Route path="/inference" element={<InferencePage />} />
           </Routes>
+          </ErrorBoundary>
         </div>
       </main>
     </div>

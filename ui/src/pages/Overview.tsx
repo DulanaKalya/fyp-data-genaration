@@ -6,7 +6,7 @@ import { SLICE_COLOR, SLICE_LABEL } from '../lib/theme'
 
 const STEPS = [
   { to: '/dataset', icon: Database, title: '1 · Dataset', text: 'Generate simulator traces matched to the testbed and inspect requested vs allocated PRBs.' },
-  { to: '/train', icon: BrainCircuit, title: '2 · Train', text: 'Choose horizons H1 < H2 < H3 (5–15 s) and train the attention Bi-LSTM or a baseline.' },
+  { to: '/train', icon: BrainCircuit, title: '2 · Train', text: 'Choose horizons H1 < H2 < H3 (1–15 s) and train the attention Bi-LSTM or a baseline.' },
   { to: '/evaluate', icon: BarChart3, title: '3 · Evaluate', text: 'Compare models with persistence, moving average and ARIMA per slice and horizon.' },
   { to: '/inference', icon: Sparkles, title: '4 · Inference', text: 'Replay traffic, watch forecasts at t+H and export A1 prediction packages for the xApp.' },
 ]
