@@ -35,6 +35,16 @@ def jobs_for(exp, seed):
             J.append((f"E8/predp_{n}h_s{seed}", ["--train-traces", str(n)] + base))
     elif exp == "E9":     # level-invariant residual target (fix for the E6 OOD weakness)
         J.append((f"E9/predp_residual_s{seed}", ["--target-mode", "residual"] + base))
+    elif exp == "E10":    # reservation targets: average / peak demand over (t, t+h]
+        J.append((f"E10/predp_mean_s{seed}", ["--target", "mean"] + base))
+        J.append((f"E10/predp_max_s{seed}", ["--target", "max"] + base))
+    elif exp == "E11":    # safe-side forecasts: 90th-percentile (pinball loss) of demand at t+h and of the peak
+        J.append((f"E11/predp_q90_s{seed}", ["--loss", "quantile", "--quantile", "0.9"] + base))
+        J.append((f"E11/predp_max_q90_s{seed}", ["--target", "max", "--loss", "quantile", "--quantile", "0.9"] + base))
+    elif exp == "E12":    # final candidates: the winning settings combined (no median filter + 60 s lookback)
+        best = ["--median-filter", "0", "--lookback", "60"]
+        J.append((f"E12/predp_final_point_s{seed}", best + base))
+        J.append((f"E12/predp_final_max_s{seed}", best + ["--target", "max"] + base))
     else:
         raise ValueError(exp)
     return J

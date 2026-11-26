@@ -6,7 +6,7 @@ import os
 import numpy as np
 import torch
 
-from prep.data import clean, MinMaxScaler
+from prep.data import clean, MinMaxScaler, horizon_targets
 from models.predp import build_model
 
 
@@ -30,6 +30,11 @@ class Predictor:
             sd = torch.load(os.path.join(run_dir, f"model_{g}.pt"), map_location=self.device, weights_only=True)
             m.load_state_dict(sd)
             self.models[g] = m.to(self.device).eval()
+
+    @property
+    def target(self):
+        """What the model predicts: point = demand at t+h, mean / max = average / peak over (t, t+h]."""
+        return self.cfg.get("target", "point")
 
     @property
     def name(self):
@@ -71,9 +76,7 @@ class Predictor:
             for j, col in enumerate(tgts):
                 sl = col.split("_")[0]
                 pred[sl] = np.maximum(self.scaler.inverse(P[:, j, :], col), 0.0)  # demand can't be negative
-                y = raw[col].to_numpy(np.float64)
-                idx = t[:, None] + hs[None, :]
-                truth[sl] = np.where(idx < T, y[np.minimum(idx, T - 1)], np.nan)
+                truth[sl] = horizon_targets(raw[col].to_numpy(np.float64), t, hs, self.target)
         return t, pred, truth
 
 
@@ -89,15 +92,13 @@ def predict_with_confidence(P, df, horizons, lo, hi):
     start = max(P.L - 1, lo - P.conf.window - max(horizons) - 2)
     t, pred, truth = P.predict_df(df, horizons, anchors=np.arange(start, hi))
     keep = t >= lo
-    conf = {s: P.conf.compute(s, horizons, pred[s], truth_matured(df, s, t, horizons))[keep] for s in pred}
+    conf = {s: P.conf.compute(s, horizons, pred[s], truth_matured(df, s, t, horizons, P.target))[keep] for s in pred}
     return t[keep], {s: v[keep] for s, v in pred.items()}, {s: v[keep] for s, v in truth.items()}, conf
 
 
-def truth_matured(df, s, t, horizons):
-    """Actual y(t+h) for each anchor; NaN when not yet observed (beyond the data)."""
-    y = df[f"{s}_req_prb_mean"].to_numpy(np.float64)
-    idx = t[:, None] + np.asarray(horizons)[None, :]
-    return np.where(idx < len(y), y[np.minimum(idx, len(y) - 1)], np.nan)
+def truth_matured(df, s, t, horizons, kind="point"):
+    """Actual target for each anchor (matures at t+h for every kind); NaN when not yet observed."""
+    return horizon_targets(df[f"{s}_req_prb_mean"].to_numpy(np.float64), t, horizons, kind)
 
 
 def list_runs(runs_dir="runs"):

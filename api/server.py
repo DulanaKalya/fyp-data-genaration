@@ -270,13 +270,20 @@ def list_runs():
                     "train_hours": cfg.get("train_hours"), "hidden": cfg["hidden"], "lr": cfg["lr"],
                     "slices": [t.split("_")[0] for g in cfg["groups"].values() for t in g["targets"]],
                     "created": cfg.get("created"), "data": cfg.get("data"), "mtime": os.path.getmtime(root),
-                    "has_confidence": os.path.exists(os.path.join(root, "confidence.json"))}
+                    "has_confidence": os.path.exists(os.path.join(root, "confidence.json")),
+                    "target": cfg.get("target", "point"), "loss": cfg.get("loss", "mse"),
+                    "quantile": cfg.get("quantile"), "target_mode": cfg.get("target_mode", "level")}
             if st == "done":
                 m = json.load(open(os.path.join(root, "metrics.json")))
                 item["headline"] = {s: {str(h): r(m["test"][s][str(h)]["model_prb"]["r2"], 3)
                                         for h in cfg["horizons_selected"]} for s in m["test"]}
             out.append(item)
-    return sorted(out, key=lambda x: x["mtime"], reverse=True)
+    dflt = os.path.join(RUNS, "DEFAULT_RUN")          # the recommended final model (one run id per file)
+    if os.path.exists(dflt):
+        d = open(dflt).read().strip()
+        for it in out:
+            it["default"] = it["id"] == d
+    return sorted(out, key=lambda x: (not x.get("default", False), -x["mtime"]))
 
 
 @app.get("/api/runs/detail")
@@ -320,6 +327,10 @@ class TrainReq(BaseModel):
     patience: int = Field(20, ge=1, le=500)
     median_filter: bool = True
     seed: int = 0
+    target: str = "point"            # point | mean | max
+    loss: str = "mse"                # mse | quantile
+    quantile: float = Field(0.9, gt=0, lt=1)
+    target_mode: str = "level"       # level | residual
 
 
 @app.post("/api/train")
@@ -330,6 +341,9 @@ def start_train(req: TrainReq):
     if req.model not in ("predp", "lstm", "gru", "transformer") or req.features not in ("uni", "multi") \
             or req.horizon_mode not in ("all", "dedicated"):
         raise HTTPException(400, "invalid model/features/mode")
+    if req.target not in ("point", "mean", "max") or req.loss not in ("mse", "quantile") \
+            or req.target_mode not in ("level", "residual"):
+        raise HTTPException(400, "invalid target/loss/target_mode")
     safe_join(RUNS, req.run_name)
     data_dir(req.data)
     if run_status(os.path.join(RUNS, req.run_name)) == "running" and os.path.exists(os.path.join(RUNS, req.run_name)):
@@ -338,7 +352,8 @@ def start_train(req: TrainReq):
            "--horizons", *map(str, h), "--horizon-mode", req.horizon_mode, "--model", req.model,
            "--features", req.features, "--lookback", str(req.lookback), "--hidden", str(req.hidden),
            "--lr", str(req.lr), "--batch-size", str(req.batch_size), "--max-epochs", str(req.max_epochs),
-           "--patience", str(req.patience), "--median-filter", str(int(req.median_filter)), "--seed", str(req.seed)]
+           "--patience", str(req.patience), "--median-filter", str(int(req.median_filter)), "--seed", str(req.seed),
+           "--target", req.target, "--loss", req.loss, "--quantile", str(req.quantile), "--target-mode", req.target_mode]
     if req.train_traces:
         cmd += ["--train-traces", str(req.train_traces)]
     return launch("train", req.run_name, cmd, f"runs/_logs/{req.run_name.replace('/', '_')}.log")
@@ -367,6 +382,8 @@ class EvalReq(BaseModel):
     horizons: List[int] = [5, 10, 15]
     arima_n: int = Field(2000, ge=0, le=20000)
     tag: str
+    ensemble: bool = False
+    blend: bool = False
 
 
 @app.post("/api/evaluate")
@@ -380,7 +397,8 @@ def start_eval(req: EvalReq):
         raise HTTPException(400, "bad split")
     safe_join(os.path.join(REPORTS, "eval"), req.tag)
     cmd = [sys.executable, "evaluate.py", "--runs", *req.runs, "--split", req.split,
-           "--horizons", *map(str, h), "--arima-n", str(req.arima_n), "--tag", req.tag]
+           "--horizons", *map(str, h), "--arima-n", str(req.arima_n), "--tag", req.tag] \
+        + (["--ensemble"] if req.ensemble else []) + (["--blend"] if req.blend else [])
     return launch("eval", req.tag, cmd, f"runs/_logs/eval_{req.tag.replace('/', '_')}.log",
                   meta={"out": req.tag + ("" if req.split == "test" else f"_{req.split}")})
 
@@ -506,7 +524,7 @@ def infer_forecast(run: str, data: str, id: str, h: List[int] = Query(...), star
                              for k, hh in enumerate(H)}
         y = df[f"{s}_req_prb_mean"].to_numpy(np.float64)
         res["metrics"][s]["persistence"] = {
-            str(hh): r(regression_metrics(y[t[valid] + hh], y[t[valid]])["r2"], 3) for hh in H}
+            str(hh): r(regression_metrics(truth[s][valid, k], y[t[valid]])["r2"], 3) for k, hh in enumerate(H)}
     res["length"] = T
     res["first_anchor"] = t0
     res["has_confidence"] = conf is not None

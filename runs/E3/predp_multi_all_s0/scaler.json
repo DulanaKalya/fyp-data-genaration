@@ -1,0 +1,42 @@
+{
+ "mins": {
+  "embb_active_ues": 0.0,
+  "embb_cqi_mean": 2.450000047683716,
+  "embb_granted_prb": 0.0,
+  "embb_req_prb_max": 0.0,
+  "embb_req_prb_mean": 0.0,
+  "embb_thr_mbps": 0.0,
+  "mmtc_active_ues": 0.0,
+  "mmtc_cqi_mean": 1.0,
+  "mmtc_granted_prb": 0.0,
+  "mmtc_req_prb_max": 0.0,
+  "mmtc_req_prb_mean": 0.0,
+  "mmtc_thr_mbps": 0.0,
+  "urllc_active_ues": 3.0,
+  "urllc_cqi_mean": 3.9666666984558105,
+  "urllc_granted_prb": 0.5652864575386047,
+  "urllc_req_prb_max": 0.6323171257972717,
+  "urllc_req_prb_mean": 0.5652864575386047,
+  "urllc_thr_mbps": 0.41809695959091187
+ },
+ "maxs": {
+  "embb_active_ues": 3.0,
+  "embb_cqi_mean": 15.0,
+  "embb_granted_prb": 140.0,
+  "embb_req_prb_max": 180.0,
+  "embb_req_prb_mean": 180.0,
+  "embb_thr_mbps": 157.29843139648438,
+  "mmtc_active_ues": 3.0,
+  "mmtc_cqi_mean": 15.0,
+  "mmtc_granted_prb": 60.0,
+  "mmtc_req_prb_max": 75.0,
+  "mmtc_req_prb_mean": 73.0272445678711,
+  "mmtc_thr_mbps": 34.261390686035156,
+  "urllc_active_ues": 3.0,
+  "urllc_cqi_mean": 15.0,
+  "urllc_granted_prb": 100.0,
+  "urllc_req_prb_max": 134.2107391357422,
+  "urllc_req_prb_mean": 127.30145263671875,
+  "urllc_thr_mbps": 59.29859924316406
+ }
+}

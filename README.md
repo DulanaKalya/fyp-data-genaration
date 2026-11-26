@@ -166,6 +166,9 @@ python train.py --data data/raw \
     --horizons 5 10 15       # any H1 < H2 < H3 within 1..15
     --horizon-mode all       # all = outputs for 1..15 s (serve any horizons later) | dedicated = 3 outputs only
     --features uni           # uni = target history only | multi = also CQI, active UEs, backlog, ...
+    --target point           # point = demand at t+h (PreNS) | mean / max = average / peak demand over (t, t+h]
+    --loss mse               # mse | quantile (with --quantile 0.9: predict the 90th percentile = safe side)
+    --target-mode level      # level | residual (predict the change from the last value; E9)
     --lookback 30            # input window, in seconds
     --hidden 64 --lr 1e-3 --batch-size 32 \
     --max-epochs 200 --patience 20 \
@@ -195,7 +198,11 @@ python evaluate.py --runs predp_uni_all_5-10-15_full E1/lstm_uni_all_s0 E1/gru_u
 python experiments/prens_comparison.py      # → reports/prens_comparison/
 ```
 
-`evaluate.py` compares every run with **persistence**, **MA-10** and **ARIMA(2,0,1)**. ARIMA runs on a random subset of windows, and every method is also scored on that same subset. It writes `reports/eval/<tag>/`:
+`evaluate.py` compares every run with **persistence**, **MA-10** and **ARIMA(2,0,1)**. Two optional combined methods:
+- `--ensemble` adds the average of the given runs.
+- `--blend` adds `w·ensemble + (1−w)·persistence`. The weight `w` is fitted per slice and horizon on the **validation** split, so the model leans on persistence at 1–3 s, where persistence is hard to beat, and on the deep model at 10–15 s.
+
+All runs being compared must predict the same target (`point`, `mean` or `max`). ARIMA runs on a random subset of windows, and every method is also scored on that same subset. It writes `reports/eval/<tag>/`:
 - `results.json`
 - `table.md`: RMSE, MAE, R² and skill over persistence per slice and horizon
 - RMSE per scenario
@@ -274,29 +281,43 @@ The API is listed at http://127.0.0.1:8765/docs. Port 8765 is used because 8000 
 
 ## Results
 
-Test split: 18 unseen 1 h traces, 64,008 windows. Values are the mean of the 3 slices.
+Test split: 18 unseen 1 h traces, 64,008 windows. Values are the mean R² of the 3 slices.
 
+### Final model
+`runs/E12/predp_final_point_s0` is PreDP **without the median filter and with a 60 s input**, the best settings from E4 and E5. The UI uses it by default (set in `runs/DEFAULT_RUN`).
+
+| Model | PreNS R² (200 ms) | @1 s | @5 s | @10 s | @15 s |
+|---|---|---|---|---|---|
+| **PreDP final** | 0.576 | **0.950** | **0.726** | **0.566** | **0.481** |
+| PreDP, original settings | 0.576 | 0.904 | 0.692 | 0.545 | 0.465 |
+| ARIMA(2,0,1)* | 0.126 | 0.951 | 0.701 | 0.508 | 0.421 |
+| Persistence | — | 0.947 | 0.673 | 0.426 | 0.290 |
+
+\*ARIMA is scored on 2000 random windows (1000 at 1 s). The other rows at 5–15 s are on those same windows.
+
+On the **peak demand over the next h s** target (`E12/predp_final_max_s0`), the final model scores **0.851 / 0.766 / 0.708** at 5 / 10 / 15 s. ARIMA scores 0.808 / 0.657 / 0.542 and persistence 0.802 / 0.631 / 0.484.
+
+### PreNS models (Table III), 3 training seeds each
 | Model | PreNS R² (200 ms) | Our R² @5 s | @10 s | @15 s |
 |---|---|---|---|---|
-| **PreDP (attention Bi-LSTM)** | 0.576 | 0.692 | **0.545** | **0.465** |
-| UT-LSTM | 0.452 | 0.691 | 0.544 | 0.465 |
-| UT-GRU | 0.518 | 0.693 | 0.543 | 0.462 |
-| UT-Transformer | 0.281 | 0.693 | 0.546 | 0.463 |
-| ARIMA(2,0,1)* | 0.126 | **0.710** | 0.496 | 0.406 |
-| Persistence | — | 0.666 | 0.416 | 0.274 |
+| PreDP (attention Bi-LSTM) | 0.576 | 0.692 ± 0.001 | 0.545 ± 0.001 | 0.465 ± 0.001 |
+| UT-LSTM | 0.452 | 0.691 ± 0.001 | 0.545 ± 0.001 | 0.465 ± 0.001 |
+| UT-GRU | 0.518 | 0.691 ± 0.002 | 0.545 ± 0.003 | 0.464 ± 0.004 |
+| UT-Transformer | 0.281 | 0.692 ± 0.001 | 0.546 ± 0.000 | 0.463 ± 0.001 |
 
-\*ARIMA was scored on 2000 random windows. On those same windows PreDP scores 0.698 / 0.528 / 0.452.
+### What the results show
+- **The architecture doesn't matter on this data.** The four deep models are within the seed-to-seed spread. PreNS reports a clear lead for PreDP; we can't confirm it. The grid search agrees: the hidden size and learning rate barely change the results.
+- **Preprocessing and input length do matter.** Removing the median filter (E5) is the largest single gain. The filter delayed the input by about 1 s, and without it the model beats persistence even at 1 s. A 60 s input (E4) adds a little more.
+- **The final model beats ARIMA and persistence at every horizon from 5 to 15 s.** At 1–3 s, persistence and ARIMA are about as good, so predicting adds little there.
+- **What you predict matters more than the model.** Predicting the *peak* over the next h s gives R² 0.71 at 15 s, compared with 0.48 for the demand at exactly t+h. It's also what PRB reservation needs.
+- **Safe-side URLLC forecasts** (E11, 90th percentile) cut under-prediction from about 80% (reactive) to 12%. The average shortfall drops from 8–11 to 1–1.6 PRBs, at the cost of reserving about 12–18 extra PRBs.
+- **Extra KPIs as inputs (E3) overfit.** They help slightly on normal traffic and hurt badly out of distribution. **More data (E8)** brings little beyond 25–50 h.
+- **One `all`-horizons model matches dedicated 3-horizon models** (E2), so the UI can switch horizons without retraining.
+- **Limitation: traffic outside the training range** (E6). With long URLLC bursts and higher load, persistence beats the model. Testbed fine-tuning (E7) is needed before deployment.
 
-**What the results show**
-- **PreDP ranks first**, as it does in PreNS. However, the four deep models are within about 0.006 R² of each other, so they are effectively tied on this data.
-- **ARIMA is best at 5 s.** From 10 s on, the deep models beat ARIMA and persistence clearly: up to +18 % RMSE skill on URLLC at 15 s.
-- **URLLC is the hardest slice** (R² 0.52 → 0.23) because its traffic is event-driven. mMTC holds up best at long horizons (0.65 at 15 s).
-- **One `all`-horizons model matches dedicated 3-horizon models** (experiment E2, for both 5/10/15 and 7/9/12). The UI can therefore change horizons with no retraining.
-- **Hyperparameters barely matter.** In the grid search, hidden {32, 64, 128} × learning rate {5e-4, 1e-3, 2e-3} gave almost identical results.
+The full comparison (RMSE/MAE in z-units, per-slice results, cost) is in [`reports/prens_comparison/comparison.md`](reports/prens_comparison/comparison.md) and in the UI under **Evaluate → PreNS paper comparison**.
 
-The full comparison, including RMSE/MAE in z-units, per-slice results and cost, is in [`reports/prens_comparison/comparison.md`](reports/prens_comparison/comparison.md).
-
-> The training and inference times in `runs/*/metrics.json` were measured while up to 6 jobs shared one laptop GPU (RTX 4060, 8 GB), so they are higher than single-job times.
+> **Cost.** PreDP takes 27 min to train on 84 h of data (3 slice models, RTX 4060 Laptop, GPU not shared) and 0.115 ms per prediction. PreNS reports 10.6 min and 0.467 ms on an RTX 4090.
 
 ---
 
@@ -306,15 +327,18 @@ Run with `python experiments/queue.py --exp E1 E3 --seeds 0 1 2 --parallel 2`. T
 
 | ID | Question | Runs | Status |
 |---|---|---|---|
-| E1 | PreDP vs UT-LSTM / UT-GRU / UT-Transformer / ARIMA (the PreNS table) | `runs/E1/` | ✅ seed 0 |
+| E1 | PreDP vs UT-LSTM / UT-GRU / UT-Transformer / ARIMA (the PreNS table) | `runs/E1/` | ✅ 3 seeds: the models are tied |
 | E2 | Does one `all`-horizons model match dedicated models? | `runs/E2/` | ✅ yes |
-| E3 | Do extra features (CQI, active UEs, backlog) help? | `runs/E3/` | pending |
-| E4 | Lookback of 20 s or 60 s instead of 30 s | `runs/E4/` | pending |
-| E5 | Effect of turning off the median filter | `runs/E5/` | pending |
+| E3 | Do extra features (CQI, active UEs, backlog) help? | `runs/E3/` | ✅ +0.006 R² on test, but **−0.09 to −0.14 R² out of distribution**. Not used. |
+| E4 | Lookback of 20 s or 60 s instead of 30 s | `runs/E4/` | ✅ 60 s: +0.005–0.008 R². 20 s: slightly worse. |
+| E5 | Effect of turning off the median filter | `runs/E5/` | ✅ **Best single gain**: +0.031 R² at 5 s, and it now beats persistence at 1 s (0.950 vs 0.947). |
 | E6 | Out-of-distribution test (`evaluate.py --split ood`) | `reports/eval/E6_ood_ood/` | ✅ weakness found (below) |
 | E7 | Fine-tuning on real testbed data (`train.py --init-from`) | — | needs testbed traces |
-| E8 | Learning curve: 10 / 25 / 50 h of training data | `runs/E8/` | pending |
-| E9 | Level-invariant target (`--target-mode residual`): predicts the change from the last value | `runs/E9/` | pending |
+| E8 | Learning curve: 10 / 25 / 50 h of training data | `runs/E8/` | ✅ 10 h: 0.680, 25 h: 0.686, 50 h: 0.690, 84 h: 0.692 R² at 5 s. More data barely helps. |
+| E9 | Level-invariant target (`--target-mode residual`): predicts the change from the last value | `runs/E9/` | ✅ OOD better (+0.04 R² at 5 s, URLLC +0.09), but test worse (−0.007 / −0.020 / −0.032). Not used. |
+| E10 | Reservation targets: **average** and **peak** demand over the next h s (`--target mean/max`) | `runs/E10/` | ✅ **Peak:** R² 0.81/0.73/0.68, beats ARIMA (0.82/0.69/0.57) at 10–15 s. **Average:** R² 0.83/0.76/0.72, but ARIMA is as good or better. |
+| E11 | Safe-side forecasts: 90th percentile (`--loss quantile`), for the point and peak targets | `runs/E11/` | ✅ URLLC under-prediction drops to 12% (reactive: 72–85%); shortfall 1–1.6 PRBs |
+| E12 | **Final candidates**: no median filter + 60 s lookback, for the point and peak targets | `runs/E12/` | ✅ **final model**: 0.726 / 0.566 / 0.481 (point), 0.851 / 0.766 / 0.708 (peak) |
 
 The whole remaining set runs overnight with `experiments/run_remaining.sh`, which logs to `runs/_logs/remaining.log`.
 

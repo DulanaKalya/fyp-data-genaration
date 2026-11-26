@@ -15,7 +15,7 @@ export default function InferencePage() {
   const run = runs?.find((r) => r.id === runId)
   useEffect(() => {
     if (runs?.length && !runId) {
-      const pref = runs.find((r) => r.horizon_mode === 'all' && r.slices.length === 3) ?? runs[0]
+      const pref = runs.find((r) => r.default) ?? runs.find((r) => r.horizon_mode === 'all' && r.slices.length === 3) ?? runs[0]
       setRunId(pref.id)
     }
   }, [runs])
@@ -48,12 +48,15 @@ export default function InferencePage() {
       {!runs ? <Spinner /> : !runs.length ? <Empty>No finished runs yet — train one first.</Empty> : (
         <div className="mb-6 grid gap-5 lg:grid-cols-2">
           <Card title="Model & horizons">
-            <Field label="Trained run"><Select value={runId ?? runs[0].id} onChange={setRunId} options={runs.map((r) => r.id)} /></Field>
+            <Field label="Trained run"><Select value={runId ?? runs[0].id} onChange={setRunId} options={runs.map((r) => r.id)} format={(id) => runs.find((r) => r.id === id)?.default ? `${id}  ★ final model` : id} /></Field>
             {run && (
               <div className="mt-2 flex flex-wrap gap-2 text-xs">
                 <Badge color="blue">{run.model}</Badge><Badge>{run.features}</Badge><Badge>{run.horizon_mode}</Badge>
                 <Badge>lookback {run.lookback} s</Badge><Badge>{run.train_hours} h train</Badge>
                 <Badge>{run.slices.map((s) => SLICE_LABEL[s]).join(' · ')}</Badge>
+                {run.target && run.target !== 'point' && <Badge color="amber">target: {run.target === 'mean' ? 'average' : 'peak'} over next h s</Badge>}
+                {run.loss === 'quantile' && <Badge color="amber">q{Math.round((run.quantile ?? 0.9) * 100)} (safe side)</Badge>}
+                {run.target_mode === 'residual' && <Badge color="amber">residual</Badge>}
               </div>
             )}
             <div className="mt-4"><HorizonPicker value={H} onChange={setH} allowed={allowed} /></div>

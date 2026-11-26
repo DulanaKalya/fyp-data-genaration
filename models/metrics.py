@@ -7,4 +7,11 @@ def regression_metrics(y, yhat):
     ss_tot = ((y - y.mean()) ** 2).sum()
     return {"rmse": float(np.sqrt((err ** 2).mean())),
             "mae": float(np.abs(err).mean()),
-            "r2": float(1 - (err ** 2).sum() / ss_tot) if ss_tot > 0 else float("nan")}
+            "r2": float(1 - (err ** 2).sum() / ss_tot) if ss_tot > 0 else float("nan"),
+            "under_rate": float((err > 0).mean()),            # share of windows where demand > prediction
+            "shortfall": float(np.maximum(err, 0).mean())}    # mean PRBs missing (SLA risk)
+
+
+def pinball(y, yhat, q):
+    e = np.asarray(y, np.float64) - np.asarray(yhat, np.float64)
+    return float(np.mean(np.maximum(q * e, (q - 1) * e)))

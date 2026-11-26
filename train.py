@@ -45,6 +45,10 @@ def parse():
     ap.add_argument("--median-filter", type=int, default=1)
     ap.add_argument("--target-mode", choices=["level", "residual"], default="level",
                     help="residual (E9): predict the change from the last value, inputs relative to it")
+    ap.add_argument("--target", choices=["point", "mean", "max"], default="point",
+                    help="point = demand at t+h (PreNS) | mean / max = average / peak demand over (t, t+h]")
+    ap.add_argument("--loss", choices=["mse", "quantile"], default="mse")
+    ap.add_argument("--quantile", type=float, default=0.9, help="q for --loss quantile (0.9 = safe side)")
     ap.add_argument("--train-traces", type=int, default=None, help="use only the first N train traces")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
@@ -57,6 +61,8 @@ def parse():
         for k in ("model", "features", "horizon_mode", "lookback", "hidden", "dropout", "median_filter"):
             setattr(a, k, base[k])
         a.target_mode = base.get("target_mode", "level")
+        a.target = base.get("target", "point")
+        a.loss, a.quantile = base.get("loss", "mse"), base.get("quantile", 0.9)
         if base["horizon_mode"] == "dedicated":
             a.horizons = base["horizons_selected"]
         if a.features == "uni":
@@ -83,12 +89,15 @@ def predict(model, ws, bs=1024):
     return torch.cat(out).numpy()
 
 
+LOSS = torch.nn.functional.mse_loss     # replaced by the training loss in train_group
+
+
 @torch.no_grad()
 def eval_loss(model, ws, bs=1024):
     model.eval()
     tot, n = 0.0, 0
     for xb, yb in ws.batches(bs):
-        tot += ((model(xb) - yb.flatten(1)) ** 2).sum().item(); n += yb.numel()
+        tot += (LOSS(model(xb), yb.flatten(1)) * yb.numel()).item(); n += yb.numel()
     return tot / n
 
 
@@ -103,7 +112,7 @@ def train_group(name, feat_cols, tgt_cols, data, scaler, a, model_h, run_dir, pr
     sets = {}
     for split in ("train", "val", "test"):
         Xs, Ys = prepare(data[split], feat_cols, tgt_cols, scaler, a.median_filter)
-        sets[split] = WindowSet(Xs, Ys, a.lookback, model_h, device=dev)
+        sets[split] = WindowSet(Xs, Ys, a.lookback, model_h, device=dev, target=a.target)
     n_t, K = len(tgt_cols), len(model_h)
     torch.manual_seed(a.seed)
     ridx = [feat_cols.index(c) for c in tgt_cols] if a.target_mode == "residual" else None
@@ -114,7 +123,15 @@ def train_group(name, feat_cols, tgt_cols, data, scaler, a, model_h, run_dir, pr
                                          weights_only=True))
         print(f"[{name}] initialised from {a.init_from}")
     opt = torch.optim.Adam(model.parameters(), lr=a.lr)
-    lossf = nn.MSELoss()
+    global LOSS
+    if a.loss == "quantile":       # pinball loss: over-prediction costs (1-q), under-prediction costs q
+        q = a.quantile
+        def lossf(p, y):
+            e = y - p
+            return torch.maximum(q * e, (q - 1) * e).mean()
+    else:
+        lossf = nn.MSELoss()
+    LOSS = lossf
     gen = torch.Generator(device=dev); gen.manual_seed(a.seed)
     best, best_state, bad, log = float("inf"), None, 0, []
     if dev == "cuda":
@@ -151,7 +168,7 @@ def train_group(name, feat_cols, tgt_cols, data, scaler, a, model_h, run_dir, pr
     # ---- test metrics: model vs persistence, per target slice and horizon ----
     P = predict(model, sets["test"]).reshape(-1, n_t, K)
     ws = sets["test"]
-    Yt = ws.Y[ws.idx[:, None] + ws.h[None, :]].transpose(1, 2).cpu().numpy()   # (N, n_t, K)
+    Yt = ws.targets(ws.idx).cpu().numpy()                                       # (N, n_t, K)
     Ylast = ws.Y[ws.idx].cpu().numpy()                                          # (N, n_t)
     metrics = {}
     for j, col in enumerate(tgt_cols):
@@ -210,7 +227,8 @@ def main():
               "horizon_mode": a.horizon_mode, "horizons_selected": a.horizons, "model_horizons": model_h,
               "lookback": a.lookback, "hidden": a.hidden, "dropout": a.dropout, "lr": a.lr,
               "batch_size": a.batch_size, "max_epochs": a.max_epochs, "patience": a.patience,
-              "median_filter": a.median_filter, "target_mode": a.target_mode, "seed": a.seed, "data": a.data,
+              "median_filter": a.median_filter, "target_mode": a.target_mode, "target": a.target,
+              "loss": a.loss, "quantile": a.quantile if a.loss == "quantile" else None, "seed": a.seed, "data": a.data,
               "sim_version": manifest["sim_version"],
               "train_traces": len(data["train"]), "train_hours": sum(len(d) for d in data["train"]) / 3600,
               "init_from": a.init_from,

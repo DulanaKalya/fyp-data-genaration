@@ -29,6 +29,7 @@ export default function TrainPage() {
   const [features, setFeatures] = useState<'uni' | 'multi'>('uni')
   const [traces, setTraces] = useState(84)
   const [adv, setAdv] = useState(false)
+  const [tgt, setTgt] = useState({ target: 'point', loss: 'mse', quantile: 0.9, target_mode: 'level' })
   const [hp, setHp] = useState({ lookback: 30, hidden: 64, lr: 0.001, batch_size: 32, max_epochs: 200, patience: 20, median_filter: true, seed: 0 })
   const [name, setName] = useState('')
   const [nameTouched, setNameTouched] = useState(false)
@@ -37,7 +38,7 @@ export default function TrainPage() {
 
   const ds = datasets?.find((d) => d.path === data)
   useEffect(() => { if (ds) setTraces((t) => Math.min(t, ds.splits.train) || ds.splits.train) }, [ds?.path])
-  const autoName = `ui/${stamp()}_${model}_${features}_${mode}_${H.join('-')}`
+  const autoName = `ui/${stamp()}_${model}_${features}_${mode}_${H.join('-')}${tgt.target !== 'point' ? '_' + tgt.target : ''}${tgt.loss === 'quantile' ? '_q' + Math.round(tgt.quantile * 100) : ''}`
   useEffect(() => { if (!nameTouched) setName(autoName) }, [autoName, nameTouched])
 
   useEffect(() => {
@@ -47,7 +48,7 @@ export default function TrainPage() {
   const start = async () => {
     setErr(null)
     try {
-      await api.post('/train', { run_name: name, data, horizons: H, horizon_mode: mode, model, features, train_traces: traces, ...hp })
+      await api.post('/train', { run_name: name, data, horizons: H, horizon_mode: mode, model, features, train_traces: traces, ...hp, ...tgt })
       setSelected(name)
       setNameTouched(false)
       setTimeout(reloadRuns, 1500)
@@ -70,7 +71,26 @@ export default function TrainPage() {
               </p>
             </div>
           </Card>
-          <Card title="2 · Data & model">
+          <Card title="2 · What to predict" subtitle="PreNS predicts the demand at exactly t + h">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Target" className="col-span-2">
+                <Segmented value={tgt.target} onChange={(v) => setTgt({ ...tgt, target: v })} options={[
+                  { value: 'point', label: 'Demand at t + h' }, { value: 'mean', label: 'Average over next h s' }, { value: 'max', label: 'Peak over next h s' }]} />
+              </Field>
+              <Field label="Loss" hint={tgt.loss === 'quantile' ? `predicts the ${Math.round(tgt.quantile * 100)}th percentile — errs on the safe side` : 'mean squared error (PreNS)'}>
+                <Select value={tgt.loss} onChange={(v) => setTgt({ ...tgt, loss: v })} options={['mse', 'quantile']} format={(v) => v === 'mse' ? 'MSE' : 'Quantile (pinball)'} />
+              </Field>
+              {tgt.loss === 'quantile'
+                ? <Field label="Quantile"><Select value={tgt.quantile} onChange={(v) => setTgt({ ...tgt, quantile: v })} options={[0.5, 0.75, 0.8, 0.9, 0.95]} /></Field>
+                : <Field label="Output" hint={tgt.target_mode === 'residual' ? 'change from the last value (level-invariant)' : 'absolute PRBs'}>
+                    <Select value={tgt.target_mode} onChange={(v) => setTgt({ ...tgt, target_mode: v })} options={['level', 'residual']} />
+                  </Field>}
+            </div>
+            <p className="mt-2 text-xs text-slate-500">
+              {tgt.target === 'point' ? 'Same task as PreNS.' : tgt.target === 'mean' ? 'The PRBs to reserve on average for the next h seconds — smoother and easier to predict.' : 'The PRBs needed to cover the busiest second in the next h seconds — what an SLA needs.'}
+            </p>
+          </Card>
+          <Card title="3 · Data & model">
             <div className="grid grid-cols-2 gap-3">
               <Field label="Dataset"><Select value={data} onChange={setData} options={datasets?.map((d) => d.path) ?? [data]} /></Field>
               <Field label="Features" hint={features === 'uni' ? "each slice's own demand (PreNS)" : 'KPIs of all slices, one joint model'}>
@@ -102,7 +122,7 @@ export default function TrainPage() {
               </div>
             )}
           </Card>
-          <Card title="3 · Start">
+          <Card title="4 · Start">
             <Field label="Run name"><TextInput value={name} onChange={(v) => { setName(v); setNameTouched(true) }} /></Field>
             <div className="mt-3"><ErrorBox error={err} /></div>
             <Button className="mt-3 w-full" onClick={start} disabled={!hValid(H) || !name}><Rocket className="h-4 w-4" /> Start training</Button>

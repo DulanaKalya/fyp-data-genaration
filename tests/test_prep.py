@@ -69,3 +69,18 @@ def test_residual_wrapper_is_level_invariant():
         d = m(x + 0.3) - m(x)
     assert torch.allclose(d, torch.full_like(d, 0.3), atol=1e-5)
     assert m(x).shape == (4, 15)
+
+
+def test_window_targets_match_horizon_targets():
+    """Training targets (WindowSet, torch) == evaluation targets (horizon_targets, numpy) for every kind."""
+    import torch
+    from prep.data import horizon_targets
+    from prep.windows import WindowSet
+    rng = np.random.default_rng(3)
+    ys = [rng.random(200).astype(np.float32), rng.random(150).astype(np.float32)]
+    H = [1, 4, 15]
+    for kind in ("point", "mean", "max"):
+        ws = WindowSet([y[:, None] for y in ys], [y[:, None] for y in ys], 30, H, target=kind)
+        got = ws.targets(ws.idx).numpy()[:, 0, :]
+        exp = np.concatenate([horizon_targets(y, np.arange(29, len(y) - 15), H, kind) for y in ys])
+        assert np.allclose(got, exp, atol=1e-5), kind

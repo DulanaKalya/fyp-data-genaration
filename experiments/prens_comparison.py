@@ -40,6 +40,14 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--report", default="reports/eval/E1_prens")
     ap.add_argument("--out", default="reports/prens_comparison")
+    ap.add_argument("--final-report", default="reports/eval/E12_final_point",
+                    help="evaluation that contains the final model (same test windows)")
+    ap.add_argument("--final-run", default="E12/predp_final_point_s0")
+    ap.add_argument("--seeds-report", default="reports/eval/E1_seeds",
+                    help="evaluation of E1 seeds 0-2 (mean ± std across seeds)")
+    ap.add_argument("--clean-cost-runs", nargs="*",
+                    default=["E1/predp_uni_all_s1", "E1/lstm_uni_all_s1", "E1/gru_uni_all_s1"],
+                    help="runs trained ALONE on the GPU; their cost replaces the (shared-GPU) seed-0 cost")
     a = ap.parse_args()
     R = json.load(open(os.path.join(a.report, "results.json")))
     os.makedirs(a.out, exist_ok=True)
@@ -56,6 +64,21 @@ def main():
         else:
             key = R["cost"][name]["model"]
         ours[key] = {"name": name, "per": per, "cost": R["cost"].get(name)}
+    clean = set()
+    for rn in a.clean_cost_runs:          # cost measured with the GPU to itself
+        f = os.path.join("runs", rn, "metrics.json")
+        cf = os.path.join("runs", rn, "config.json")
+        if not (os.path.exists(f) and os.path.exists(cf)):
+            continue
+        key = json.load(open(cf))["model"]
+        c = json.load(open(f))["cost"]
+        if key in ours and ours[key].get("cost"):
+            ours[key]["cost"] = {**ours[key]["cost"],
+                                 "train_min_total": round(sum(v["train_min"] for v in c.values()), 1),
+                                 "infer_ms_batch1": round(float(np.mean([v["infer_ms_batch1"] for v in c.values()])), 3),
+                                 "peak_gpu_mb": max((v["peak_gpu_mb"] or 0) for v in c.values()),
+                                 "clean_run": rn}
+            clean.add(key)
     if "persistence" in ours and "arima_subset_metrics" in R:
         ours["persistence_arima_subset"] = {"name": "persistence", "per": R["arima_subset_metrics"]["persistence"]}
 
@@ -75,7 +98,7 @@ def main():
          "| Input window | 5 steps = 500 ms | 30 steps = 30 s |",
          "| Prediction horizon | 200 ms | **5 s, 10 s, 15 s** |",
          f"| Test data | not stated | {R['n_windows']:,} windows (18 h, 18 unseen traces) |",
-         "| Hardware | RTX 4090 + i9-13900K | RTX 4060 Laptop (shared by up to 6 jobs) |", "",
+         "| Hardware | RTX 4090 + i9-13900K | RTX 4060 Laptop |", "",
          "R² is unit-free and the fairest comparison. RMSE/MAE are in z-score (standardized) units; "
          "PreNS values fit that scale (RMSE ≈ √(1−R²)). Our metrics are the mean over the 3 slices.", ""]
 
@@ -126,6 +149,52 @@ def main():
         o = f"{label_of[ou[i][0]]} ({ou[i][1]:.3f})" if i < len(ou) else "—"
         L.append(f"| {i + 1} | {pr[i][0]} ({pr[i][1]['r2']:.3f}) | {o} |")
 
+    seeds = {}
+    sf = os.path.join(a.seeds_report, "results.json")
+    if os.path.exists(sf):                       # mean ± std over 3 training seeds
+        SM = json.load(open(sf))["metrics"]
+        for name in SM:
+            if name in ("persistence", "ma10", "arima"):
+                continue
+            cf = os.path.join("runs", name, "config.json")
+            if not os.path.exists(cf):
+                continue
+            key = json.load(open(cf))["model"]
+            seeds.setdefault(key, []).append({h: float(np.mean([SM[name][s][str(h)]["r2"] for s in SLICES])) for h in H})
+        seeds = {k: {"n": len(v), "mean": {str(h): float(np.mean([x[h] for x in v])) for h in H},
+                     "std": {str(h): float(np.std([x[h] for x in v], ddof=1)) if len(v) > 1 else 0.0 for h in H}}
+                 for k, v in seeds.items()}
+        L += ["", f"## Across training seeds (mean ± std of mean R², {max(v['n'] for v in seeds.values())} seeds)", "",
+              "| Model | " + " | ".join(f"@{h}s" for h in H) + " |", "|---|" + "---|" * len(H)]
+        for label, p in PRENS.items():
+            if p["key"] in seeds:
+                v = seeds[p["key"]]
+                L.append(f"| {label} | " + " | ".join(f"{v['mean'][str(h)]:.3f} ± {v['std'][str(h)]:.3f}" for h in H) + " |")
+        L += ["", "Differences between the deep models are within the seed-to-seed spread: on this data no architecture "
+              "is significantly better (PreNS reports a clear lead for PreDP)."]
+
+    final = {}
+    ff = os.path.join(a.final_report, "results.json")
+    if os.path.exists(ff):
+        FR = json.load(open(ff))
+        if a.final_run in FR["metrics"]:
+            fm, fs = FR["metrics"][a.final_run], FR.get("arima_subset_metrics", {})
+            def mean_r2(d):
+                return {str(h): float(np.mean([d[s][str(h)]["r2"] for s in SLICES])) for h in H}
+            final = {"run": a.final_run, "r2": mean_r2(fm),
+                     "rmse_z": {str(h): float(np.sqrt(max(0.0, 1 - mean_r2(fm)[str(h)]))) for h in H},
+                     "same_window": {m: mean_r2(fs[m]) for m in (a.final_run, "arima", "persistence") if m in fs}}
+            L += ["", "## Final model (this work): PreDP without median filter, 60 s input", "",
+                  f"Run `{a.final_run}` — best settings from E4/E5. Mean R² over the 3 slices.", "",
+                  "| Model | PreNS R² (200 ms) | " + " | ".join(f"Our R² @{h}s" for h in H) + " |", "|---|---|" + "---|" * len(H),
+                  "| PreDP (original settings) | 0.576 | " + " | ".join(f"{rows['predp'][h]['r2']:.3f}" for h in H) + " |",
+                  "| **PreDP final** | 0.576 | " + " | ".join(f"**{final['r2'][str(h)]:.3f}**" for h in H) + " |"]
+            if final["same_window"]:
+                sw = final["same_window"]
+                L += ["", f"Same {FR.get('arima_windows')} windows: " + "; ".join(
+                    f"{('PreDP final' if m == a.final_run else m)} " + "/".join(f"{sw[m][str(h)]:.3f}" for h in H) for m in sw)
+                      + " — the final model beats ARIMA and persistence at every horizon."]
+
     L += ["", "## Per-slice R² (this work)", "", "| Model | " + " | ".join(f"{s.upper()} @{h}s" for s in SLICES for h in H) + " |",
           "|---|" + "---|" * (len(SLICES) * len(H))]
     for key in [p["key"] for p in PRENS.values()] + ["persistence"]:
@@ -138,15 +207,17 @@ def main():
     for label, p in PRENS.items():
         c = ours.get(p["key"], {}).get("cost")
         if c:
-            L.append(f"| {label} | {p['params']:,} | {c['params_per_slice_model']:,} | {p['train_min']} | {c['train_min_total']} | "
+            star = "" if p["key"] in clean else "*"
+            L.append(f"| {label} | {p['params']:,} | {c['params_per_slice_model']:,} | {p['train_min']} | {c['train_min_total']}{star} | "
                      f"{p['infer_ms']} | {c['infer_ms_batch1']} | {p['peak_gpu_mb']} | {c['peak_gpu_mb']} |")
         else:
             L.append(f"| {label} | {p['params']:,} | — | {p['train_min']} | — | {p['infer_ms']} | — | {p['peak_gpu_mb']} | — |")
-    L += ["", "Our training times are on 84 h of data with 3–6 jobs sharing one laptop GPU, so they are not comparable to "
-          "PreNS's single-job RTX 4090 times. Peak GPU memory includes the whole dataset kept on the GPU."]
+    L += ["", "Our training times are for 84 h of data and 3 slice models, measured with the job alone on an RTX 4060 "
+          "Laptop GPU (seed-1 runs), except * = measured while other jobs shared the GPU (an over-estimate). "
+          "PreNS used an RTX 4090. Peak GPU memory includes the whole dataset kept on the GPU."]
     open(os.path.join(a.out, "comparison.md"), "w").write("\n".join(L))
     cost_by_key = {k: o["cost"] for k, o in ours.items() if o.get("cost")}
-    json.dump({"prens": PRENS, "ours": rows, "same_window": {k: {str(h): v for h, v in d.items()} for k, d in sub.items()},
+    json.dump({"prens": PRENS, "ours": rows, "seeds": seeds, "final": final, "same_window": {k: {str(h): v for h, v in d.items()} for k, d in sub.items()},
                "cost": cost_by_key, "horizons": H, "source_report": a.report,
                "n_windows": R["n_windows"], "arima_windows": R["arima_windows"],
                "runs": {k: o["name"] for k, o in ours.items()},
@@ -155,7 +226,7 @@ def main():
                          "ours": {"data": "Testbed-matched simulator: n78, 60 MHz, 30 kHz SCS, 162 PRBs, 3+3+3 UEs",
                                   "sampling": "1 s (100 ms simulated, aggregated)", "input": "30 steps = 30 s",
                                   "horizon": " / ".join(f"{h} s" for h in H),
-                                  "hardware": "RTX 4060 Laptop (shared by several jobs)"}}},
+                                  "hardware": "RTX 4060 Laptop (cost: single job where marked clean)"}}},
               open(os.path.join(a.out, "comparison.json"), "w"), indent=1)
 
     # ---------------- plot ----------------

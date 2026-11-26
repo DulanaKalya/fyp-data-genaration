@@ -1,0 +1,41 @@
+[joint] train windows=298,704 val=64,008 test=64,008 params=57,133
+[joint] ep   1 train 0.00855 val 0.00860 * (24.4s)
+[joint] ep   2 train 0.00799 val 0.00840 * (23.1s)
+[joint] ep   3 train 0.00784 val 0.00836 * (24.6s)
+[joint] ep   4 train 0.00773 val 0.00831 * (27.6s)
+[joint] ep   5 train 0.00763 val 0.00834   (23.2s)
+[joint] ep   6 train 0.00755 val 0.00833   (23.6s)
+[joint] ep   7 train 0.00748 val 0.00829 * (23.3s)
+[joint] ep   8 train 0.00741 val 0.00835   (22.8s)
+[joint] ep   9 train 0.00735 val 0.00854   (22.8s)
+[joint] ep  10 train 0.00729 val 0.00851   (22.9s)
+[joint] ep  11 train 0.00723 val 0.00847   (23.7s)
+[joint] ep  12 train 0.00718 val 0.00852   (23.6s)
+[joint] ep  13 train 0.00712 val 0.00863   (23.1s)
+[joint] ep  14 train 0.00708 val 0.00853   (24.1s)
+[joint] ep  15 train 0.00703 val 0.00867   (23.3s)
+[joint] ep  16 train 0.00699 val 0.00864   (24.1s)
+[joint] ep  17 train 0.00694 val 0.00868   (23.0s)
+[joint] ep  18 train 0.00689 val 0.00869   (23.1s)
+[joint] ep  19 train 0.00688 val 0.00896   (23.0s)
+[joint] ep  20 train 0.00683 val 0.00879   (22.9s)
+[joint] ep  21 train 0.00679 val 0.00896   (23.1s)
+[joint] ep  22 train 0.00675 val 0.00895   (22.9s)
+[joint] ep  23 train 0.00670 val 0.00877   (23.5s)
+[joint] ep  24 train 0.00667 val 0.00889   (23.1s)
+[joint] ep  25 train 0.00664 val 0.00900   (24.0s)
+[joint] ep  26 train 0.00660 val 0.00913   (22.9s)
+[joint] ep  27 train 0.00656 val 0.00912   (23.2s)
+Confidence calibrated (confidence.json)
+
+Run saved: runs/E3/predp_multi_all_s0
+slice    h | RMSE(PRB)    MAE     R2 | persistence RMSE  R2
+embb     5 |     16.81  11.74  0.792 |     16.74  0.794
+embb    10 |     22.12  16.11  0.640 |     23.31  0.600
+embb    15 |     25.43  19.15  0.524 |     27.53  0.442
+urllc    5 |     10.71   7.36  0.526 |     11.31  0.471
+urllc   10 |     12.84   8.80  0.318 |     15.10  0.057
+urllc   15 |     13.65   9.19  0.229 |     16.63 -0.144
+mmtc     5 |      4.11   2.29  0.775 |      4.47  0.734
+mmtc    10 |      4.75   2.70  0.701 |      5.56  0.591
+mmtc    15 |      5.06   2.85  0.660 |      5.99  0.524

@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from prep.data import SLICES, load_split, target_col, clean
+from prep.data import SLICES, load_split, target_col, clean, horizon_targets
 from predictor import Predictor
 from models.metrics import regression_metrics
 
@@ -31,7 +31,14 @@ def resolve_run(r, runs_dir):
     return r if os.path.isdir(r) else os.path.join(runs_dir, r)
 
 
-def arima_forecasts(train_dfs, test_dfs, anchors, n, L, H, seed=0):
+def aggregate_path(F, H, kind):
+    """F: (N, maxH) forecast path for t+1..t+maxH -> (N, K) target of the given kind."""
+    J = np.arange(1, F.shape[1] + 1)
+    A = F if kind == "point" else (np.cumsum(F, 1) / J if kind == "mean" else np.maximum.accumulate(F, 1))
+    return A[:, np.asarray(H) - 1]
+
+
+def arima_forecasts(train_dfs, test_dfs, anchors, n, L, H, seed=0, kind="point"):
     """ARIMA(2,0,1) fitted per slice on train, applied with fixed params to the last L s of each sampled window."""
     from statsmodels.tsa.arima.model import ARIMA
     rng = np.random.default_rng(seed)
@@ -49,7 +56,7 @@ def arima_forecasts(train_dfs, test_dfs, anchors, n, L, H, seed=0):
                 i, t = pairs[k]
                 y = test_dfs[i][col].to_numpy(np.float64)
                 F[j] = res.apply(y[t - L + 1:t + 1]).forecast(max(H))
-        out[s] = np.maximum(F[:, np.asarray(H) - 1], 0)
+        out[s] = np.maximum(aggregate_path(F, H, kind), 0)
     return pick, out
 
 
@@ -63,9 +70,16 @@ def main():
     ap.add_argument("--arima-n", type=int, default=2000, help="ARIMA windows (0 = skip)")
     ap.add_argument("--tag", default=None)
     ap.add_argument("--out", default="reports/eval")
+    ap.add_argument("--ensemble", action="store_true", help="add 'ensemble' = mean of the given runs")
+    ap.add_argument("--blend", action="store_true",
+                    help="add 'blend' = w*ensemble + (1-w)*persistence, w fitted per slice x horizon on VAL")
     a = ap.parse_args()
 
     preds = [Predictor(resolve_run(r, a.runs_dir)) for r in a.runs]
+    kinds = {p.target for p in preds}
+    if len(kinds) > 1:
+        raise SystemExit(f"runs predict different targets {kinds}; compare runs with the same --target")
+    kind = kinds.pop()
     H_sel = a.horizons or preds[0].cfg["horizons_selected"]
     all15 = list(range(1, 16))
     H = all15 if all(set(all15) <= set(p.model_h) for p in preds) else sorted(set(H_sel))
@@ -77,34 +91,52 @@ def main():
 
     dfs = load_split(a.data, a.split)
     Lmax = max([p.L for p in preds] + [30])
-    anchors = [np.arange(Lmax - 1, len(d) - 15) for d in dfs]
 
-    # ---- collect predictions on common anchors ----
-    methods = {p.name: {} for p in preds}
-    methods.update({"persistence": {}, "ma10": {}})
-    truth, scen = {s: [] for s in SLICES}, []
-    for d, an in zip(dfs, anchors):
-        scen.append(d["scenario"].astype(str).to_numpy()[an])
-        for s in SLICES:
-            y = clean(d, [target_col(s)], median_filter=False)[target_col(s)].to_numpy(np.float64)
-            truth[s].append(y[an[:, None] + np.asarray(H)[None, :]])
-            methods["persistence"].setdefault(s, []).append(np.repeat(y[an][:, None], len(H), 1))
-            ma = pd.Series(y).rolling(10, min_periods=1).mean().to_numpy()
-            methods["ma10"].setdefault(s, []).append(np.repeat(ma[an][:, None], len(H), 1))
-        for p in preds:
-            _, pr, _ = p.predict_df(d, H, anchors=an)
-            for s, v in pr.items():
-                methods[p.name].setdefault(s, []).append(v)
-    truth = {s: np.concatenate(v) for s, v in truth.items()}
-    scen = np.concatenate(scen)
-    for m in methods:
-        methods[m] = {s: np.concatenate(v) for s, v in methods[m].items()}
+    def collect(dfs_):
+        """Predictions of every method on common anchors of dfs_; truth = the runs' target kind."""
+        anchors_ = [np.arange(Lmax - 1, len(d) - 15) for d in dfs_]
+        methods_ = {p.name: {} for p in preds}
+        methods_.update({"persistence": {}, "ma10": {}})
+        truth_, scen_ = {s: [] for s in SLICES}, []
+        for d, an in zip(dfs_, anchors_):
+            scen_.append(d["scenario"].astype(str).to_numpy()[an])
+            for s in SLICES:
+                y = clean(d, [target_col(s)], median_filter=False)[target_col(s)].to_numpy(np.float64)
+                truth_[s].append(horizon_targets(y, an, H, kind))
+                methods_["persistence"].setdefault(s, []).append(np.repeat(y[an][:, None], len(H), 1))
+                ma = pd.Series(y).rolling(10, min_periods=1).mean().to_numpy()
+                methods_["ma10"].setdefault(s, []).append(np.repeat(ma[an][:, None], len(H), 1))
+            for p in preds:
+                _, pr, _ = p.predict_df(d, H, anchors=an)
+                for s, v in pr.items():
+                    methods_[p.name].setdefault(s, []).append(v)
+        truth_ = {s: np.concatenate(v) for s, v in truth_.items()}
+        for m in methods_:
+            methods_[m] = {s: np.concatenate(v) for s, v in methods_[m].items()}
+        if a.ensemble or a.blend:
+            common = set.intersection(*[set(methods_[p.name]) for p in preds])
+            methods_["ensemble"] = {s: np.mean([methods_[p.name][s] for p in preds], 0) for s in sorted(common)}
+        return anchors_, methods_, truth_, np.concatenate(scen_)
+
+    anchors, methods, truth, scen = collect(dfs)
+    blend_w = {}
+    if a.blend:      # weights from the validation split only (no test information)
+        _, mv, tv, _ = collect(load_split(a.data, "val"))
+        methods["blend"] = {}
+        for s, E in mv["ensemble"].items():
+            P, Y = mv["persistence"][s], tv[s]
+            d = E - P
+            w = np.clip(((Y - P) * d).sum(0) / np.maximum((d * d).sum(0), 1e-12), 0, 1)       # (K,)
+            blend_w[s] = {str(h): round(float(w[k]), 3) for k, h in enumerate(H)}
+            methods["blend"][s] = w * methods["ensemble"][s] + (1 - w) * methods["persistence"][s]
+        if not a.ensemble:
+            methods.pop("ensemble")
 
     arima_pick = None
     if a.arima_n > 0:
         t0 = time.time()
         train_dfs = load_split(a.data, "train", 5)
-        arima_pick, ar = arima_forecasts(train_dfs, dfs, anchors, a.arima_n, 30, H)
+        arima_pick, ar = arima_forecasts(train_dfs, dfs, anchors, a.arima_n, 30, H, kind=kind)
         methods["arima"] = ar
         print(f"ARIMA on {len(arima_pick)} windows ({time.time() - t0:.0f}s)")
 
@@ -164,12 +196,15 @@ def main():
 
     json.dump({"split": a.split, "horizons": H, "horizons_selected": H_sel, "n_windows": int(len(scen)),
                "arima_windows": len(arima_pick) if arima_pick is not None else 0,
+               "target": kind, "blend_weights": blend_w,
                "metrics": res, "arima_subset_metrics": subset, "scenario_rmse": scen_tab, "cost": cost},
               open(os.path.join(out, "results.json"), "w"), indent=1)
 
     # ---- markdown table ----
+    TGT = {"point": "demand at t+h", "mean": "average demand over (t, t+h]", "max": "peak demand over (t, t+h]"}
     lines = [f"# Evaluation `{tag}` — split `{a.split}`, {len(scen):,} windows"
-             + (f" (ARIMA on a random {len(arima_pick)}-window subset)" if arima_pick is not None else ""), ""]
+             + (f" (ARIMA on a random {len(arima_pick)}-window subset)" if arima_pick is not None else ""), "",
+             f"Target: **{TGT[kind]}**" + (f" · blend weights (val): {blend_w}" if blend_w else ""), ""]
     for s in SLICES:
         hdr = "| method | " + " | ".join(f"RMSE@{h}s | MAE@{h}s | R²@{h}s | skill@{h}s" for h in H_sel) + " |"
         lines += [f"## {s.upper()} (requested PRBs)", "", hdr, "|" + "---|" * (1 + 4 * len(H_sel))]

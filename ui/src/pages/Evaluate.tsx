@@ -41,6 +41,7 @@ function NewEval({ runs, onFinished }: { runs: Run[] | null; onFinished: (tag: s
   const [arima, setArima] = useState(2000)
   const [H, setH] = useState([5, 10, 15])
   const [tag, setTag] = useState('')
+  const [ens, setEns] = useState({ ensemble: false, blend: false })
   const [err, setErr] = useState<string | null>(null)
   const { data: jobs } = useApi<Job[]>('/jobs', { kind: 'eval' }, 2500)
   const last = jobs?.[jobs.length - 1]
@@ -57,7 +58,7 @@ function NewEval({ runs, onFinished }: { runs: Run[] | null; onFinished: (tag: s
   const run = async () => {
     setErr(null)
     try {
-      await api.post('/evaluate', { runs: sel, split, horizons: H, arima_n: arima, tag })
+      await api.post('/evaluate', { runs: sel, split, horizons: H, arima_n: arima, tag, ...ens })
       setWatching(tag)
     } catch (e: any) { setErr(e.message) }
   }
@@ -83,6 +84,12 @@ function NewEval({ runs, onFinished }: { runs: Run[] | null; onFinished: (tag: s
             <Field label="Split"><Select value={split} onChange={setSplit} options={['test', 'ood', 'val']} format={(v) => v === 'ood' ? 'ood (unseen ranges)' : v} /></Field>
             <Field label="ARIMA windows" hint="0 = skip"><NumberInput value={arima} min={0} max={20000} step={500} onChange={setArima} /></Field>
             <Field label="Report name"><TextInput value={tag} onChange={setTag} /></Field>
+          </div>
+          <div className="flex flex-wrap gap-4 text-sm text-slate-600">
+            <label className="flex items-center gap-2"><input type="checkbox" checked={ens.ensemble} onChange={(e) => setEns({ ...ens, ensemble: e.target.checked })} />
+              Ensemble <span className="text-xs text-slate-400">(mean of the selected runs)</span></label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={ens.blend} onChange={(e) => setEns({ ...ens, blend: e.target.checked })} />
+              Blend with persistence <span className="text-xs text-slate-400">(weights fitted on validation)</span></label>
           </div>
           <ErrorBox error={err} />
           <Button onClick={run} disabled={!sel.length || !hValid(H) || !tag || !!last?.running}><Play className="h-4 w-4" /> Run evaluation</Button>

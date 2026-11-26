@@ -7,7 +7,7 @@
 | Input window | 5 steps = 500 ms | 30 steps = 30 s |
 | Prediction horizon | 200 ms | **5 s, 10 s, 15 s** |
 | Test data | not stated | 64,008 windows (18 h, 18 unseen traces) |
-| Hardware | RTX 4090 + i9-13900K | RTX 4060 Laptop (shared by up to 6 jobs) |
+| Hardware | RTX 4090 + i9-13900K | RTX 4060 Laptop |
 
 R² is unit-free and the fairest comparison. RMSE/MAE are in z-score (standardized) units; PreNS values fit that scale (RMSE ≈ √(1−R²)). Our metrics are the mean over the 3 slices.
 
@@ -46,6 +46,28 @@ ARIMA(2,0,1) uses a random 2000-window subset; persistence on the same subset: R
 | 4 | UT-Transformer (0.281) | UT-LSTM (0.555) |
 | 5 | ARIMA (0.126) | ARIMA (0.537) |
 
+## Across training seeds (mean ± std of mean R², 3 seeds)
+
+| Model | @5s | @10s | @15s |
+|---|---|---|---|
+| PreDP (attention Bi-LSTM) | 0.692 ± 0.001 | 0.545 ± 0.001 | 0.465 ± 0.001 |
+| UT-LSTM | 0.691 ± 0.001 | 0.545 ± 0.001 | 0.465 ± 0.001 |
+| UT-GRU | 0.691 ± 0.002 | 0.545 ± 0.003 | 0.464 ± 0.004 |
+| UT-Transformer | 0.692 ± 0.001 | 0.546 ± 0.000 | 0.463 ± 0.001 |
+
+Differences between the deep models are within the seed-to-seed spread: on this data no architecture is significantly better (PreNS reports a clear lead for PreDP).
+
+## Final model (this work): PreDP without median filter, 60 s input
+
+Run `E12/predp_final_point_s0` — best settings from E4/E5. Mean R² over the 3 slices.
+
+| Model | PreNS R² (200 ms) | Our R² @5s | Our R² @10s | Our R² @15s |
+|---|---|---|---|---|
+| PreDP (original settings) | 0.576 | 0.692 | 0.545 | 0.465 |
+| **PreDP final** | 0.576 | **0.726** | **0.566** | **0.481** |
+
+Same 2000 windows: PreDP final 0.724/0.570/0.489; arima 0.701/0.508/0.421; persistence 0.673/0.426/0.290 — the final model beats ARIMA and persistence at every horizon.
+
 ## Per-slice R² (this work)
 
 | Model | EMBB @5s | EMBB @10s | EMBB @15s | URLLC @5s | URLLC @10s | URLLC @15s | MMTC @5s | MMTC @10s | MMTC @15s |
@@ -61,10 +83,10 @@ ARIMA(2,0,1) uses a random 2000-window subset; persistence on the same subset: R
 
 | Model | PreNS params | Our params (per slice) | PreNS train min | Our train min (3 slices) | PreNS infer ms | Our infer ms (batch 1) | PreNS peak GPU MB | Our peak GPU MB |
 |---|---|---|---|---|---|---|---|---|
-| PreDP (attention Bi-LSTM) | 35,844 | 44,559 | 10.6 | 40.3 | 0.467 | 0.13 | 31.09 | 1029.2 |
-| UT-LSTM | 51,139 | 51,407 | 7.6 | 26.4 | 0.977 | 0.087 | 26.57 | 196.1 |
-| UT-GRU | 38,403 | 38,799 | 4.6 | 25.4 | 0.55 | 0.074 | 20.39 | 547.9 |
-| UT-Transformer | 283,067 | 84,431 | 31.2 | 56.0 | 0.603 | 0.267 | 54.07 | 236.1 |
+| PreDP (attention Bi-LSTM) | 35,844 | 44,559 | 10.6 | 27.4 | 0.467 | 0.115 | 31.09 | 288.7 |
+| UT-LSTM | 51,139 | 51,407 | 7.6 | 18.8 | 0.977 | 0.068 | 26.57 | 196.1 |
+| UT-GRU | 38,403 | 38,799 | 4.6 | 15.2 | 0.55 | 0.067 | 20.39 | 155.1 |
+| UT-Transformer | 283,067 | 84,431 | 31.2 | 56.0* | 0.603 | 0.267 | 54.07 | 236.1 |
 | ARIMA | 13,443 | — | 2.1 | — | 2.015 | — | 18.07 | — |
 
-Our training times are on 84 h of data with 3–6 jobs sharing one laptop GPU, so they are not comparable to PreNS's single-job RTX 4090 times. Peak GPU memory includes the whole dataset kept on the GPU.
+Our training times are for 84 h of data and 3 slice models, measured with the job alone on an RTX 4060 Laptop GPU (seed-1 runs), except * = measured while other jobs shared the GPU (an over-estimate). PreNS used an RTX 4090. Peak GPU memory includes the whole dataset kept on the GPU.

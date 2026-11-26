@@ -71,3 +71,24 @@ class MinMaxScaler:
     @classmethod
     def from_dict(cls, d):
         return cls(dict(d["mins"]), dict(d["maxs"]))
+
+
+TARGET_KINDS = ("point", "mean", "max")
+
+
+def horizon_targets(y, t, horizons, kind="point"):
+    """Target for anchor t (last observed second) and horizon h, shape (N, K); NaN past the end of y.
+       point: y[t+h]                     (PreNS: demand at exactly t+h)
+       mean : mean(y[t+1 .. t+h])        (average demand to reserve for the next h s)
+       max  : max (y[t+1 .. t+h])        (peak demand in the next h s)"""
+    y = np.asarray(y, np.float64)
+    t = np.asarray(t)
+    H = np.asarray(horizons)
+    if kind == "point":
+        idx = t[:, None] + H[None, :]
+        return np.where(idx < len(y), y[np.minimum(idx, len(y) - 1)], np.nan)
+    J = np.arange(1, H.max() + 1)
+    idx = t[:, None] + J[None, :]
+    path = np.where(idx < len(y), y[np.minimum(idx, len(y) - 1)], np.nan)     # (N, maxH)
+    agg = np.cumsum(path, 1) / J[None, :] if kind == "mean" else np.maximum.accumulate(path, 1)
+    return agg[:, H - 1]                                                       # NaN propagates past the end

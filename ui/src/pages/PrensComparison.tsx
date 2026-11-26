@@ -177,6 +177,39 @@ export default function PrensComparison() {
         </Card>
       </div>
 
+      {C.final?.r2 && (
+        <Card title="★ Final model (this work)" subtitle={`${C.final.run} — PreDP without the median filter and with a 60 s input (best settings from experiments E4/E5)`}>
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500"><th className="py-2">Model</th><th>PreNS (200 ms)</th>
+              {H.map((h) => <th key={h}>R² @{h} s</th>)}</tr></thead>
+            <tbody>
+              <tr className="border-b border-slate-100"><td className="py-1.5">PreDP — original settings</td><td>0.576</td>
+                {H.map((h) => <td key={h}>{fmt(ours.predp?.[h]?.r2, 3)}</td>)}</tr>
+              <tr className="font-semibold text-indigo-700"><td className="py-1.5">PreDP — final</td><td className="font-normal text-slate-700">0.576</td>
+                {H.map((h) => <td key={h}>{fmt(C.final.r2[String(h)], 3)}</td>)}</tr>
+            </tbody>
+          </table>
+          {C.final.same_window && Object.keys(C.final.same_window).length > 0 && (
+            <p className="mt-3 text-xs text-slate-500">On the same ARIMA windows the final model scores {H.map((h) => fmt(C.final.same_window[C.final.run]?.[String(h)], 3)).join(' / ')}
+              {' '}vs ARIMA {H.map((h) => fmt(C.final.same_window.arima?.[String(h)], 3)).join(' / ')} and persistence {H.map((h) => fmt(C.final.same_window.persistence?.[String(h)], 3)).join(' / ')} — best at every horizon.</p>
+          )}
+        </Card>
+      )}
+
+      {C.seeds && Object.keys(C.seeds).length > 0 && (
+        <Card title="Across training seeds" subtitle="Mean ± std of mean R² over independent training runs — differences smaller than the spread are not significant">
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500"><th className="py-2">Model</th><th>Seeds</th>
+              {H.map((h) => <th key={h}>@{h} s</th>)}</tr></thead>
+            <tbody>{keys.filter((k) => C.seeds[k]).map((k) => (
+              <tr key={k} className="border-b border-slate-100 last:border-0">
+                <td className="py-1.5">{labels[k]}</td><td className="text-slate-500">{C.seeds[k].n}</td>
+                {H.map((h) => <td key={h}><b>{fmt(C.seeds[k].mean[String(h)], 3)}</b> <span className="text-xs text-slate-400">± {fmt(C.seeds[k].std[String(h)], 3)}</span></td>)}
+              </tr>))}</tbody>
+          </table>
+        </Card>
+      )}
+
       <Card title="Per-slice R² (this work)">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -196,7 +229,7 @@ export default function PrensComparison() {
         </div>
       </Card>
 
-      <Card title="Cost" subtitle="Our training: 84 h of data, GPU shared by several jobs — not comparable to PreNS's single-job RTX 4090 times">
+      <Card title="Cost" subtitle="Our training: 84 h of data, one job alone on an RTX 4060 Laptop (PreNS: RTX 4090). * = measured while the GPU was shared (over-estimate)">
         <table className="w-full text-sm">
           <thead><tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
             <th className="py-2">Model</th><th>Params PreNS</th><th>Params ours</th><th>Train min PreNS</th><th>Train min ours (3 slices)</th>
@@ -206,7 +239,7 @@ export default function PrensComparison() {
             return (
               <tr key={k} className="border-b border-slate-100 last:border-0">
                 <td className="py-1.5">{labels[k]}</td><td>{p.params.toLocaleString()}</td><td>{c ? c.params_per_slice_model.toLocaleString() : '—'}</td>
-                <td>{p.train_min}</td><td>{c ? c.train_min_total : '—'}</td><td>{p.infer_ms}</td><td className="font-semibold">{c ? c.infer_ms_batch1 : '—'}</td>
+                <td>{p.train_min}</td><td>{c ? `${c.train_min_total}${c.clean_run ? '' : '*'}` : '—'}</td><td>{p.infer_ms}</td><td className="font-semibold">{c ? c.infer_ms_batch1 : '—'}</td>
               </tr>)
           })}</tbody>
         </table>

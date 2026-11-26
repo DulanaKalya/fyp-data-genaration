@@ -23,8 +23,9 @@ def build_windows(X, Y, lookback, horizons):
 class WindowSet:
     """All traces of a split stored once on the device; windows are gathered per batch (fast, low memory)."""
 
-    def __init__(self, Xs, Ys, lookback, horizons, device="cpu"):
+    def __init__(self, Xs, Ys, lookback, horizons, device="cpu", target="point"):
         self.L = lookback
+        self.target = target
         self.h = torch.as_tensor(np.asarray(horizons), device=device)
         offs, idx, start = [], [], 0
         for X in Xs:
@@ -42,8 +43,19 @@ class WindowSet:
     def get(self, sel):
         t = self.idx[sel]
         xb = self.X[t[:, None] + self.ar[None, :]]                  # (B, L, F)
-        yb = self.Y[t[:, None] + self.h[None, :]].transpose(1, 2)   # (B, n_targets, K)
-        return xb, yb
+        return xb, self.targets(t)
+
+    def targets(self, t):
+        """(B, n_targets, K) targets for anchors t (absolute indices); see prep.data.horizon_targets."""
+        if self.target == "point":
+            return self.Y[t[:, None] + self.h[None, :]].transpose(1, 2)
+        J = torch.arange(1, int(self.h.max()) + 1, device=self.Y.device)
+        path = self.Y[t[:, None] + J[None, :]]                     # (B, maxH, n_targets); anchors keep t+maxH in-trace
+        if self.target == "mean":
+            agg = path.cumsum(1) / J[None, :, None]
+        else:
+            agg = path.cummax(1).values
+        return agg[:, self.h - 1].transpose(1, 2)
 
     def batches(self, batch_size, shuffle=False, generator=None):
         n = len(self)

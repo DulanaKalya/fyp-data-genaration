@@ -85,6 +85,7 @@ export interface Run {
   horizon_mode: 'all' | 'dedicated'; horizons_selected: number[]; model_horizons: number[]
   lookback: number; train_hours: number; hidden: number; lr: number; slices: Slice[]
   created: string; data: string; headline?: Record<string, Record<string, number>>; has_confidence?: boolean
+  default?: boolean; target?: 'point' | 'mean' | 'max'; loss?: 'mse' | 'quantile'; quantile?: number | null; target_mode?: 'level' | 'residual'
 }
 
 export interface Segment { start: number; end: number; scenario: string }
