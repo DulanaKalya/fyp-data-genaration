@@ -89,3 +89,60 @@ def mmtc_ue(rng, n, tick, intensity, p, ev):
             reports[a:b] += n_dev[a:b] * p["mmtc_wave_frac"] / L
         t += p["mmtc_wave_period_s"] * rng.uniform(0.85, 1.15)
     return reports * p["mmtc_payload_b"] * 8 * p["mmtc_overhead"]
+
+
+# ------------------------------------------------------------------ uplink (PLAN_UL.md)
+# Every UL generator takes its own RNG (rng_ul) so the DL draws are untouched.
+
+def _alternating_sessions(rng, n, tick, on_s, off_s):
+    """0/1 mask of sessions: on for U(on_s) seconds, off for U(off_s) seconds, random start state."""
+    m = np.zeros(n)
+    t, state = 0, rng.random() < 0.5
+    while t < n:
+        d = max(1, int(rng.uniform(*(on_s if state else off_s)) / tick))
+        if state:
+            m[t:t + d] = 1.0
+        t += d
+        state = not state
+    return m
+
+
+def embb_ul(rng, n, tick, dl_bps, on, p, ev):
+    """eMBB UL per UE: TCP ACKs (fraction of the UE's DL rate) + camera streams uploaded by one UE.
+    dl_bps, on: (n_ue, n). Returns (n_ue, n) bits/s."""
+    n_ue = dl_bps.shape[0]
+    out = dl_bps * p["embb_ul_ack_frac"]
+    n_cam = int(np.round(p["embb_ul_cameras"]))
+    up = rng.integers(n_ue)                          # the uploader UE (lab: one UE carries all AGV cameras)
+    for _ in range(n_cam):
+        sess = _alternating_sessions(rng, n, tick, ev["embb_ul_camera_on_s"], ev["embb_ul_camera_off_s"])
+        rate = p["embb_ul_camera_mbps"] * rng.uniform(0.7, 1.3)
+        sig = p["embb_ul_camera_noise"]
+        out[up] += sess * rate * 1e6 * rng.lognormal(-sig ** 2 / 2, sig, n)
+    return out * on
+
+
+def urllc_ul(rng, n, tick, dl_bps, burst_mode, p):
+    """URLLC UL per UE: acknowledgements of the DL commands (short lag) + alarm/status reports
+    that ramp up during burst / contention / sla_conflict. Returns (n_ue, n) bits/s."""
+    lag = int(np.round(p["urllc_ul_ack_lag_ticks"]))
+    ack = np.roll(dl_bps, lag, axis=1) * p["urllc_ul_ack_ratio"]
+    if lag:
+        ack[:, :lag] = dl_bps[:, :1] * p["urllc_ul_ack_ratio"]
+    alarm = pd.Series(burst_mode.astype(float)).ewm(alpha=tick / p["urllc_ul_alarm_ramp_s"]).mean().to_numpy()
+    out = np.empty_like(dl_bps)
+    for u in range(dl_bps.shape[0]):
+        rep = p["urllc_ul_alarm_mbps"] * rng.uniform(0.7, 1.3) * alarm * rng.lognormal(-0.02, 0.2, n)
+        out[u] = ack[u] * rng.lognormal(-0.005, 0.1, n) + rep * 1e6
+    return out
+
+
+def mmtc_ul(rng, n, tick, intensity, burst_mode, p):
+    """mMTC UL for one UE: telemetry from several sources (records = position, speed, battery, status).
+    Records per tick are Poisson; the rate follows load intensity and jumps during events. Returns (n,) bits/s."""
+    n_src = max(1, int(np.round(p["mmtc_ul_sources"])))
+    rate_hz = n_src * p["mmtc_ul_rate_hz"] * (0.5 + 0.5 * np.minimum(intensity, 1.5))
+    rate_hz = rate_hz * np.where(burst_mode, p["mmtc_ul_event_mult"], 1.0)
+    records = rng.poisson(rate_hz * tick)
+    kb = p["mmtc_ul_record_kb"] * rng.lognormal(-0.02, 0.2, n)
+    return records * kb * 8e3 * p["mmtc_ul_overhead"] / tick

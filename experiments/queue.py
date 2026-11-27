@@ -45,6 +45,18 @@ def jobs_for(exp, seed):
         best = ["--median-filter", "0", "--lookback", "60"]
         J.append((f"E12/predp_final_point_s{seed}", best + base))
         J.append((f"E12/predp_final_max_s{seed}", best + ["--target", "max"] + base))
+    elif exp == "E13":    # uplink models (separate per slice and direction), final settings, data/raw_v2
+        ul = ["--data", "data/raw_v2", "--direction", "ul", "--median-filter", "0", "--lookback", "60"] + base
+        J.append((f"E13/predp_ul_point_s{seed}", ul))
+        J.append((f"E13/predp_ul_max_s{seed}", ul + ["--target", "max"]))
+        J.append((f"E13/predp_ul_q90_s{seed}", ul + ["--loss", "quantile", "--quantile", "0.9"]))
+        J.append((f"E13/predp_ul_max_q90_s{seed}", ul + ["--target", "max", "--loss", "quantile", "--quantile", "0.9"]))
+    elif exp == "E14":    # 1 vs 2 models: does the other direction's history help? (pair = DL + UL inputs)
+        v2 = ["--data", "data/raw_v2", "--median-filter", "0", "--lookback", "60"] + base
+        J.append((f"E14/predp_ul_uni_s{seed}", v2 + ["--direction", "ul"]))
+        J.append((f"E14/predp_ul_pair_s{seed}", v2 + ["--direction", "ul", "--features", "pair"]))
+        J.append((f"E14/predp_dl_uni_s{seed}", v2 + ["--direction", "dl"]))
+        J.append((f"E14/predp_dl_pair_s{seed}", v2 + ["--direction", "dl", "--features", "pair"]))
     else:
         raise ValueError(exp)
     return J

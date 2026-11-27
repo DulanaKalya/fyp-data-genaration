@@ -73,11 +73,13 @@ export function useApi<T = any>(path: string | null, params?: Params, pollMs?: n
 
 // ---------------- types (loose; mirror api/server.py) ----------------
 export type Slice = 'embb' | 'urllc' | 'mmtc'
+export type Direction = 'dl' | 'ul'
 export const SLICES: Slice[] = ['embb', 'urllc', 'mmtc']
 
 export interface Dataset {
   path: string; sim_version: string; trace_hours: number; total_prb: number
   splits: Record<string, number>; hours: Record<string, number>
+  directions?: Direction[]
 }
 
 export interface Run {
@@ -85,7 +87,7 @@ export interface Run {
   horizon_mode: 'all' | 'dedicated'; horizons_selected: number[]; model_horizons: number[]
   lookback: number; train_hours: number; hidden: number; lr: number; slices: Slice[]
   created: string; data: string; headline?: Record<string, Record<string, number>>; has_confidence?: boolean
-  default?: boolean; target?: 'point' | 'mean' | 'max'; loss?: 'mse' | 'quantile'; quantile?: number | null; target_mode?: 'level' | 'residual'
+  default?: boolean; direction?: Direction; target?: 'point' | 'mean' | 'max'; loss?: 'mse' | 'quantile'; quantile?: number | null; target_mode?: 'level' | 'residual'
 }
 
 export interface Segment { start: number; end: number; scenario: string }

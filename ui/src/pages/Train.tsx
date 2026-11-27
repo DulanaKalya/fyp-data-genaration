@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { BrainCircuit, ChevronDown, Rocket } from 'lucide-react'
-import { api, useApi, type Dataset, type Run } from '../lib/api'
+import { api, useApi, type Dataset, type Direction, type Run } from '../lib/api'
 import { Button, Card, Empty, ErrorBox, Field, LogBox, NumberInput, PageHeader, Segmented, Select, Spinner, StatusBadge, TextInput } from '../components/ui'
 import { HorizonPicker, hValid, H_MIN, H_MAX } from '../components/HorizonPicker'
 import { XYChart } from '../components/charts'
@@ -26,7 +26,8 @@ export default function TrainPage() {
   const [mode, setMode] = useState<'all' | 'dedicated'>('all')
   const [data, setData] = useState('data/raw')
   const [model, setModel] = useState('predp')
-  const [features, setFeatures] = useState<'uni' | 'multi'>('uni')
+  const [features, setFeatures] = useState<'uni' | 'multi' | 'pair'>('uni')
+  const [direction, setDirection] = useState<Direction>('dl')
   const [traces, setTraces] = useState(84)
   const [adv, setAdv] = useState(false)
   const [tgt, setTgt] = useState({ target: 'point', loss: 'mse', quantile: 0.9, target_mode: 'level' })
@@ -37,8 +38,10 @@ export default function TrainPage() {
   const [selected, setSelected] = useState<string | null>(null)
 
   const ds = datasets?.find((d) => d.path === data)
+  const hasUl = !!ds?.directions?.includes('ul')
+  useEffect(() => { if (!hasUl) { setDirection('dl'); if (features === 'pair') setFeatures('uni') } }, [hasUl])
   useEffect(() => { if (ds) setTraces((t) => Math.min(t, ds.splits.train) || ds.splits.train) }, [ds?.path])
-  const autoName = `ui/${stamp()}_${model}_${features}_${mode}_${H.join('-')}${tgt.target !== 'point' ? '_' + tgt.target : ''}${tgt.loss === 'quantile' ? '_q' + Math.round(tgt.quantile * 100) : ''}`
+  const autoName = `ui/${stamp()}_${model}_${direction === 'ul' ? 'ul_' : ''}${features}_${mode}_${H.join('-')}${tgt.target !== 'point' ? '_' + tgt.target : ''}${tgt.loss === 'quantile' ? '_q' + Math.round(tgt.quantile * 100) : ''}`
   useEffect(() => { if (!nameTouched) setName(autoName) }, [autoName, nameTouched])
 
   useEffect(() => {
@@ -48,7 +51,7 @@ export default function TrainPage() {
   const start = async () => {
     setErr(null)
     try {
-      await api.post('/train', { run_name: name, data, horizons: H, horizon_mode: mode, model, features, train_traces: traces, ...hp, ...tgt })
+      await api.post('/train', { run_name: name, data, horizons: H, horizon_mode: mode, model, features, train_traces: traces, direction, ...hp, ...tgt })
       setSelected(name)
       setNameTouched(false)
       setTimeout(reloadRuns, 1500)
@@ -93,8 +96,16 @@ export default function TrainPage() {
           <Card title="3 · Data & model">
             <div className="grid grid-cols-2 gap-3">
               <Field label="Dataset"><Select value={data} onChange={setData} options={datasets?.map((d) => d.path) ?? [data]} /></Field>
-              <Field label="Features" hint={features === 'uni' ? "each slice's own demand (PreNS)" : 'KPIs of all slices, one joint model'}>
-                <Select value={features} onChange={setFeatures} options={['uni', 'multi'] as ('uni' | 'multi')[]} />
+              <Field label="Direction" className="col-span-2"
+                hint={hasUl ? (direction === 'ul' ? 'uplink requested PRBs (separate UL model per slice)' : 'downlink requested PRBs')
+                  : 'this dataset is DL only — choose data/raw_v2 for uplink'}>
+                <Segmented value={direction} onChange={(v) => hasUl && setDirection(v)}
+                  options={[{ value: 'dl', label: 'Downlink (DL)' }, { value: 'ul', label: hasUl ? 'Uplink (UL)' : 'Uplink (UL) — n/a' }]} />
+              </Field>
+              <Field label="Features" hint={features === 'uni' ? "each slice's own demand (PreNS)" : features === 'pair'
+                ? 'the slice’s DL + UL demand (E14: does the other direction help?)' : 'KPIs of all slices, one joint model'}>
+                <Select value={features} onChange={setFeatures}
+                  options={(hasUl ? ['uni', 'multi', 'pair'] : ['uni', 'multi']) as ('uni' | 'multi' | 'pair')[]} />
               </Field>
               <Field label="Model" className="col-span-2">
                 <Select value={model} onChange={setModel} options={MODELS.map((m) => m.value)} format={(v) => MODELS.find((m) => m.value === v)!.label} />

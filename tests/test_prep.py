@@ -84,3 +84,15 @@ def test_window_targets_match_horizon_targets():
         got = ws.targets(ws.idx).numpy()[:, 0, :]
         exp = np.concatenate([horizon_targets(y, np.arange(29, len(y) - 15), H, kind) for y in ys])
         assert np.allclose(got, exp, atol=1e-5), kind
+
+
+def test_direction_columns():
+    """DL keeps the original names, UL adds '_ul_', active_ues is shared; pair = both directions."""
+    from prep.data import dcol, feature_columns, target_col
+    assert target_col("embb") == "embb_req_prb_mean" == target_col("embb", "dl")
+    assert target_col("embb", "ul") == "embb_ul_req_prb_mean"
+    assert dcol("mmtc", "active_ues", "ul") == "mmtc_active_ues"
+    assert feature_columns("uni", "urllc", "ul") == ["urllc_ul_req_prb_mean"]
+    assert feature_columns("pair", "urllc", "ul") == ["urllc_ul_req_prb_mean", "urllc_req_prb_mean"]
+    assert feature_columns("pair", "urllc", "dl") == ["urllc_req_prb_mean", "urllc_ul_req_prb_mean"]
+    assert all("_ul_" in c or c.endswith("active_ues") for c in feature_columns("multi", direction="ul"))

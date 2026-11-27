@@ -30,6 +30,9 @@ from .data import SLICES
 
 METRICS = ["req_prb_mean", "req_prb_max", "req_prb_p95", "granted_prb", "unmet_prb", "active_ues",
            "thr_mbps", "cqi_mean", "buffer_kb", "latency_ms_p95"]
+# uplink metrics use the same names with "ul_" (e.g. embb_ul_req_prb_mean; map ul_req_prb_mean / ul_granted_prb
+# in the mapping YAML). active_ues is shared by both directions.
+UL_METRICS = [m for m in METRICS if m != "active_ues"]
 # metric -> how to fill it when the testbed does not report it (documented in manifest 'derived')
 DERIVED = {
     "req_prb_max": "req_prb_mean", "req_prb_p95": "req_prb_mean",
@@ -81,7 +84,7 @@ def to_wide(df, m):
         metric = full.split("_", 1)[1]
         out[full] = df[src].astype(np.float64) * scale.get(metric, scale.get(full, 1.0))
     for s in SLICES:
-        for metric in METRICS:
+        for metric in METRICS + [f"ul_{m}" for m in UL_METRICS]:
             c = f"{s}_{metric}"
             if c not in out and c in df:
                 out[c] = df[c].astype(np.float64)
@@ -116,6 +119,23 @@ def fill_missing(r, total_prb):
                 r[c] = r[f"{s}_{src}"] if isinstance(src, str) else src
                 derived[c] = src if isinstance(src, str) else str(src)
     r["total_req_prb_mean"] = sum(r[f"{s}_req_prb_mean"] for s in SLICES)
+    if any(f"{s}_ul_req_prb_mean" in r or f"{s}_ul_granted_prb" in r for s in SLICES):   # file has uplink
+        for s in SLICES:
+            if f"{s}_ul_req_prb_mean" not in r:
+                if f"{s}_ul_granted_prb" in r:
+                    r[f"{s}_ul_req_prb_mean"] = r[f"{s}_ul_granted_prb"]
+                    derived[f"{s}_ul_req_prb_mean"] = "ul_granted_prb (no UL demand KPI: under-estimates when saturated)"
+                else:
+                    r[f"{s}_ul_req_prb_mean"] = 0.0
+                    derived[f"{s}_ul_req_prb_mean"] = "0 (slice UL not in file)"
+            for metric, src in DERIVED.items():
+                if metric == "active_ues":
+                    continue
+                c = f"{s}_ul_{metric}"
+                if c not in r:
+                    r[c] = r[f"{s}_ul_{src}"] if isinstance(src, str) else src
+                    derived[c] = f"ul_{src}" if isinstance(src, str) else str(src)
+        r["total_ul_req_prb_mean"] = sum(r[f"{s}_ul_req_prb_mean"] for s in SLICES)
     bad = r[[f"{s}_req_prb_mean" for s in SLICES]].gt(total_prb * 1.5).any(axis=1).sum()
     return r, derived, int(bad)
 

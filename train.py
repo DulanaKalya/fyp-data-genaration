@@ -16,7 +16,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from prep.data import SLICES, load_manifest, load_split, clean, MinMaxScaler, feature_columns, target_col
+from prep.data import SLICES, load_manifest, load_split, clean, MinMaxScaler, feature_columns, target_col, has_direction
 from prep.windows import WindowSet
 from models.predp import build_model
 from models.metrics import regression_metrics
@@ -32,7 +32,10 @@ def parse():
     ap.add_argument("--run-name", default=None)
     ap.add_argument("--horizons", type=int, nargs=3, default=[5, 10, 15], help="H1 H2 H3 (1..15 s)")
     ap.add_argument("--horizon-mode", choices=["all", "dedicated"], default="all")
-    ap.add_argument("--features", choices=["uni", "multi"], default="uni")
+    ap.add_argument("--features", choices=["uni", "multi", "pair"], default="uni",
+                    help="pair = DL + UL history of the slice (needs a sim 2.0 dataset)")
+    ap.add_argument("--direction", choices=["dl", "ul"], default="dl",
+                    help="dl = downlink requested PRBs (original) | ul = uplink (needs a sim 2.0 dataset, e.g. data/raw_v2)")
     ap.add_argument("--slices", nargs="+", default=SLICES, help="uni mode: which slice models to train")
     ap.add_argument("--model", default="predp", choices=["predp", "lstm", "gru", "transformer"])
     ap.add_argument("--lookback", type=int, default=30)
@@ -61,6 +64,7 @@ def parse():
         for k in ("model", "features", "horizon_mode", "lookback", "hidden", "dropout", "median_filter"):
             setattr(a, k, base[k])
         a.target_mode = base.get("target_mode", "level")
+        a.direction = base.get("direction", "dl")
         a.target = base.get("target", "point")
         a.loss, a.quantile = base.get("loss", "mse"), base.get("quantile", 0.9)
         if base["horizon_mode"] == "dedicated":
@@ -202,27 +206,31 @@ def main():
     torch.manual_seed(a.seed); np.random.seed(a.seed)
     model_h = list(range(1, MAX_H + 1)) if a.horizon_mode == "all" else a.horizons
     run_id = a.run_name or datetime.now().strftime("%Y%m%d-%H%M%S") + \
-        f"_{a.model}_{a.features}_{a.horizon_mode}_{'-'.join(map(str, a.horizons))}"
+        f"_{a.model}_{a.features}_{'' if a.direction == 'dl' else 'ul_'}{a.horizon_mode}_{'-'.join(map(str, a.horizons))}"
     run_dir = os.path.join(a.runs, run_id)
     os.makedirs(run_dir, exist_ok=True)
     progress = a.progress_file or os.path.join(run_dir, "progress.json")
 
+    if not has_direction(a.data, a.direction):
+        raise SystemExit(f"dataset {a.data} has no {a.direction.upper()} columns; use a sim 2.0 dataset such as data/raw_v2")
     manifest = load_manifest(a.data)
     data = {"train": load_split(a.data, "train", a.train_traces, manifest),
             "val": load_split(a.data, "val", None, manifest),
             "test": load_split(a.data, "test", None, manifest)}
 
-    if a.features == "uni":
-        groups = {s: (feature_columns("uni", s), [target_col(s)]) for s in a.slices}
+    if a.features in ("uni", "pair"):
+        if a.features == "pair" and not has_direction(a.data, "ul"):
+            raise SystemExit("--features pair needs DL and UL columns (sim 2.0 dataset)")
+        groups = {s: (feature_columns(a.features, s, a.direction), [target_col(s, a.direction)]) for s in a.slices}
     else:
-        groups = {"joint": (feature_columns("multi"), [target_col(s) for s in SLICES])}
+        groups = {"joint": (feature_columns("multi", direction=a.direction), [target_col(s, a.direction) for s in SLICES])}
     all_cols = sorted({c for f, t in groups.values() for c in f + t})
     if a.init_from:      # keep the base scaler so the pretrained weights see the same input scale
         scaler = MinMaxScaler.from_dict(json.load(open(os.path.join(a.init_from, "scaler.json"))))
     else:
         scaler = MinMaxScaler().fit(data["train"], all_cols)
 
-    config = {"run_id": run_id, "model": a.model, "features": a.features, "groups":
+    config = {"run_id": run_id, "model": a.model, "features": a.features, "direction": a.direction, "groups":
               {g: {"features": f, "targets": t} for g, (f, t) in groups.items()},
               "horizon_mode": a.horizon_mode, "horizons_selected": a.horizons, "model_horizons": model_h,
               "lookback": a.lookback, "hidden": a.hidden, "dropout": a.dropout, "lr": a.lr,

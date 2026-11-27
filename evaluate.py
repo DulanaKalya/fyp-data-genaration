@@ -38,7 +38,7 @@ def aggregate_path(F, H, kind):
     return A[:, np.asarray(H) - 1]
 
 
-def arima_forecasts(train_dfs, test_dfs, anchors, n, L, H, seed=0, kind="point"):
+def arima_forecasts(train_dfs, test_dfs, anchors, n, L, H, seed=0, kind="point", direction="dl"):
     """ARIMA(2,0,1) fitted per slice on train, applied with fixed params to the last L s of each sampled window."""
     from statsmodels.tsa.arima.model import ARIMA
     rng = np.random.default_rng(seed)
@@ -46,7 +46,7 @@ def arima_forecasts(train_dfs, test_dfs, anchors, n, L, H, seed=0, kind="point")
     pick = sorted(rng.choice(len(pairs), size=min(n, len(pairs)), replace=False))
     out = {}
     for s in SLICES:
-        col = target_col(s)
+        col = target_col(s, direction)
         y_fit = np.concatenate([d[col].to_numpy(np.float64) for d in train_dfs[:5]])
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -64,7 +64,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", nargs="+", required=True)
     ap.add_argument("--runs-dir", default="runs")
-    ap.add_argument("--data", default="data/raw")
+    ap.add_argument("--data", default=None, help="default: the dataset the first run was trained on")
     ap.add_argument("--split", default="test", choices=["test", "val", "ood"])
     ap.add_argument("--horizons", type=int, nargs=3, default=None)
     ap.add_argument("--arima-n", type=int, default=2000, help="ARIMA windows (0 = skip)")
@@ -80,6 +80,11 @@ def main():
     if len(kinds) > 1:
         raise SystemExit(f"runs predict different targets {kinds}; compare runs with the same --target")
     kind = kinds.pop()
+    dirs = {p.direction for p in preds}
+    if len(dirs) > 1:
+        raise SystemExit(f"runs predict different directions {dirs}; DL and UL are separate PRB budgets - evaluate them separately")
+    direction = dirs.pop()
+    a.data = a.data or preds[0].cfg.get("data", "data/raw")
     H_sel = a.horizons or preds[0].cfg["horizons_selected"]
     all15 = list(range(1, 16))
     H = all15 if all(set(all15) <= set(p.model_h) for p in preds) else sorted(set(H_sel))
@@ -101,7 +106,7 @@ def main():
         for d, an in zip(dfs_, anchors_):
             scen_.append(d["scenario"].astype(str).to_numpy()[an])
             for s in SLICES:
-                y = clean(d, [target_col(s)], median_filter=False)[target_col(s)].to_numpy(np.float64)
+                y = clean(d, [target_col(s, direction)], median_filter=False)[target_col(s, direction)].to_numpy(np.float64)
                 truth_[s].append(horizon_targets(y, an, H, kind))
                 methods_["persistence"].setdefault(s, []).append(np.repeat(y[an][:, None], len(H), 1))
                 ma = pd.Series(y).rolling(10, min_periods=1).mean().to_numpy()
@@ -136,7 +141,7 @@ def main():
     if a.arima_n > 0:
         t0 = time.time()
         train_dfs = load_split(a.data, "train", 5)
-        arima_pick, ar = arima_forecasts(train_dfs, dfs, anchors, a.arima_n, 30, H, kind=kind)
+        arima_pick, ar = arima_forecasts(train_dfs, dfs, anchors, a.arima_n, 30, H, kind=kind, direction=direction)
         methods["arima"] = ar
         print(f"ARIMA on {len(arima_pick)} windows ({time.time() - t0:.0f}s)")
 
@@ -147,7 +152,8 @@ def main():
         res[m] = {}
         for s, P in per.items():
             Y = truth[s] if m != "arima" else truth[s][arima_pick]
-            rng_prb = sc.maxs[target_col(s)] - sc.mins[target_col(s)] if target_col(s) in sc.maxs else 1.0
+            tc = target_col(s, direction)
+            rng_prb = sc.maxs[tc] - sc.mins[tc] if tc in sc.maxs else 1.0
             res[m][s] = {}
             for k, h in enumerate(H):
                 r = regression_metrics(Y[:, k], P[:, k])
@@ -196,7 +202,7 @@ def main():
 
     json.dump({"split": a.split, "horizons": H, "horizons_selected": H_sel, "n_windows": int(len(scen)),
                "arima_windows": len(arima_pick) if arima_pick is not None else 0,
-               "target": kind, "blend_weights": blend_w,
+               "target": kind, "direction": direction, "data": a.data, "blend_weights": blend_w,
                "metrics": res, "arima_subset_metrics": subset, "scenario_rmse": scen_tab, "cost": cost},
               open(os.path.join(out, "results.json"), "w"), indent=1)
 
@@ -204,10 +210,10 @@ def main():
     TGT = {"point": "demand at t+h", "mean": "average demand over (t, t+h]", "max": "peak demand over (t, t+h]"}
     lines = [f"# Evaluation `{tag}` — split `{a.split}`, {len(scen):,} windows"
              + (f" (ARIMA on a random {len(arima_pick)}-window subset)" if arima_pick is not None else ""), "",
-             f"Target: **{TGT[kind]}**" + (f" · blend weights (val): {blend_w}" if blend_w else ""), ""]
+             f"Direction: **{direction.upper()}** · Target: **{TGT[kind]}**" + (f" · blend weights (val): {blend_w}" if blend_w else ""), ""]
     for s in SLICES:
         hdr = "| method | " + " | ".join(f"RMSE@{h}s | MAE@{h}s | R²@{h}s | skill@{h}s" for h in H_sel) + " |"
-        lines += [f"## {s.upper()} (requested PRBs)", "", hdr, "|" + "---|" * (1 + 4 * len(H_sel))]
+        lines += [f"## {s.upper()} ({direction.upper()} requested PRBs)", "", hdr, "|" + "---|" * (1 + 4 * len(H_sel))]
         for m in res:
             if s not in res[m]:
                 continue
@@ -272,11 +278,11 @@ def main():
     n = min(15 * 60, len(d))                     # testbed traces can be shorter than 15 min
     win = (t + h3) < n
     for ax, s in zip(axs, pr):
-        y = d[target_col(s)].to_numpy()
+        y = d[target_col(s, direction)].to_numpy()
         ax.plot(np.arange(n) / 60, y[:n], color=COLORS[s], lw=1.2, label="actual")
         ax.plot((t[win] + h1) / 60, pr[s][win, 0], color="orange", lw=0.9, label=f"predicted {h1} s earlier (made at t−{h1})")
         ax.plot((t[win] + h3) / 60, pr[s][win, 1], color="purple", lw=0.9, alpha=0.8, label=f"predicted {h3} s earlier (made at t−{h3})")
-        ax.set_ylabel(f"{s.upper()} PRBs"); ax.legend(fontsize=8, loc="upper right"); ax.grid(alpha=0.3)
+        ax.set_ylabel(f"{s.upper()} {direction.upper()} PRBs"); ax.legend(fontsize=8, loc="upper right"); ax.grid(alpha=0.3)
     axs[-1].set_xlabel("time (min)")
     fig.suptitle(f"{p.name} — {a.split} trace {d['trace_id'].iloc[0]} (each prediction is drawn at the time it is FOR; it was made h s earlier)")
     fig.tight_layout(); fig.savefig(os.path.join(out, "predictions_vs_actual.png"), dpi=110); plt.close(fig)

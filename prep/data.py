@@ -9,17 +9,49 @@ SLICES = ["embb", "urllc", "mmtc"]
 MULTI_BASE = ["req_prb_mean", "req_prb_max", "active_ues", "thr_mbps", "cqi_mean", "granted_prb"]
 
 
-def target_col(slice_):
-    return f"{slice_}_req_prb_mean"
+DIRECTIONS = ("dl", "ul")
 
 
-def feature_columns(features, slice_=None):
-    """uni: the slice's own demand only (PreNS). multi: KPIs of all slices."""
+def dcol(slice_, metric="req_prb_mean", direction="dl"):
+    """Column name of a per-slice metric: DL keeps the original names (embb_req_prb_mean),
+    UL adds '_ul_' (embb_ul_req_prb_mean). active_ues is shared by both directions."""
+    if direction not in DIRECTIONS:
+        raise ValueError(direction)
+    if direction == "dl" or metric == "active_ues":
+        return f"{slice_}_{metric}"
+    return f"{slice_}_ul_{metric}"
+
+
+def target_col(slice_, direction="dl"):
+    return dcol(slice_, "req_prb_mean", direction)
+
+
+def slice_of(col):
+    """'embb_ul_req_prb_mean' -> 'embb'."""
+    return col.split("_")[0]
+
+
+def feature_columns(features, slice_=None, direction="dl"):
+    """uni: the slice's own demand only (PreNS). multi: KPIs of all slices (same direction).
+    pair: the slice's demand in BOTH directions (target direction first) - E14 cross-direction test."""
     if features == "uni":
-        return [target_col(slice_)]
+        return [target_col(slice_, direction)]
+    if features == "pair":
+        other = "ul" if direction == "dl" else "dl"
+        return [target_col(slice_, direction), target_col(slice_, other)]
     if features == "multi":
-        return [f"{s}_{b}" for s in SLICES for b in MULTI_BASE]
+        return [dcol(s, b, direction) for s in SLICES for b in MULTI_BASE]
     raise ValueError(features)
+
+
+def has_direction(data_dir, direction):
+    """True if the dataset in data_dir has columns for this direction (UL needs sim 2.0)."""
+    if direction == "dl":
+        return True
+    m = load_manifest(data_dir)
+    first = next(iter(m["traces"]))
+    cols = pd.read_parquet(os.path.join(data_dir, f"trace_{first}.parquet"), columns=None).columns
+    return target_col(SLICES[0], direction) in cols
 
 
 def load_manifest(data_dir):

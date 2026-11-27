@@ -25,6 +25,7 @@ sys.path.insert(0, ROOT)
 from api.jobs import launch, list_jobs, pid_alive  # noqa: E402
 from datagen.scenarios import SCENARIOS  # noqa: E402
 from models.metrics import regression_metrics  # noqa: E402
+from prep.data import dcol, target_col, has_direction  # noqa: E402
 
 SLICES = ["embb", "urllc", "mmtc"]
 RUNS = os.path.join(ROOT, "runs")
@@ -171,10 +172,23 @@ def list_datasets():
                 m = manifest(d)
                 h = m["config"]["trace_hours"]
                 out.append({"path": f"data/{name}", "sim_version": m["sim_version"], "trace_hours": h,
+                            "directions": [x for x in ("dl", "ul") if _has_dir(d, x)],
                             "total_prb": m["config"]["radio"]["total_prb"],
                             "splits": {s: len(v) for s, v in m["splits"].items()},
                             "hours": {s: len(v) * h for s, v in m["splits"].items()}})
     return out
+
+
+@lru_cache(maxsize=32)
+def _has_dir_cached(d, direction, mtime):
+    try:
+        return has_direction(d, direction)
+    except Exception:  # noqa: BLE001
+        return direction == "dl"
+
+
+def _has_dir(d, direction):
+    return _has_dir_cached(d, direction, os.path.getmtime(os.path.join(d, "manifest.json")))
 
 
 def report_dir_for(data):
@@ -200,14 +214,19 @@ def dataset_traces(data: str = "data/raw"):
 
 
 @app.get("/api/trace")
-def get_trace(data: str, id: str, start: int = 0, end: Optional[int] = None):
+def get_trace(data: str, id: str, start: int = 0, end: Optional[int] = None, direction: str = "dl"):
+    if direction not in ("dl", "ul"):
+        raise HTTPException(400, "direction must be dl or ul")
     df = load_trace(data, id)
+    if target_col(SLICES[0], direction) not in df:
+        raise HTTPException(400, f"this dataset has no {direction.upper()} columns")
     end = end or int(df.t.max()) + 1
     d = df[(df.t >= start) & (df.t < end)]
     out = {"t": d.t.astype(int).tolist(), "length": int(len(df)), "segments": segments(d),
-           "total_req": [r(v) for v in d["total_req_prb_mean"]], "slices": {}}
+           "total_req": [r(v) for v in d["total_req_prb_mean" if direction == "dl" else "total_ul_req_prb_mean"]],
+           "direction": direction, "slices": {}}
     for s in SLICES:
-        out["slices"][s] = {k: [r(v) for v in d[f"{s}_{c}"]] for k, c in
+        out["slices"][s] = {k: [r(v) for v in d[dcol(s, c, direction)]] for k, c in
                             [("req_mean", "req_prb_mean"), ("req_max", "req_prb_max"), ("granted", "granted_prb"),
                              ("active_ues", "active_ues"), ("cqi", "cqi_mean"), ("latency_p95", "latency_ms_p95")]}
     meta_f = os.path.join(DATA, data[len("data/"):], f"trace_{id}.json") if data != "upload" else None
@@ -271,6 +290,7 @@ def list_runs():
                     "slices": [t.split("_")[0] for g in cfg["groups"].values() for t in g["targets"]],
                     "created": cfg.get("created"), "data": cfg.get("data"), "mtime": os.path.getmtime(root),
                     "has_confidence": os.path.exists(os.path.join(root, "confidence.json")),
+                    "direction": cfg.get("direction", "dl"),
                     "target": cfg.get("target", "point"), "loss": cfg.get("loss", "mse"),
                     "quantile": cfg.get("quantile"), "target_mode": cfg.get("target_mode", "level")}
             if st == "done":
@@ -278,11 +298,15 @@ def list_runs():
                 item["headline"] = {s: {str(h): r(m["test"][s][str(h)]["model_prb"]["r2"], 3)
                                         for h in cfg["horizons_selected"]} for s in m["test"]}
             out.append(item)
-    dflt = os.path.join(RUNS, "DEFAULT_RUN")          # the recommended final model (one run id per file)
-    if os.path.exists(dflt):
-        d = open(dflt).read().strip()
+    # recommended final models: runs/DEFAULT_RUN (DL) and runs/DEFAULT_RUN_UL (UL), one run id per file
+    defaults = set()
+    for fn in ("DEFAULT_RUN", "DEFAULT_RUN_UL"):
+        f = os.path.join(RUNS, fn)
+        if os.path.exists(f):
+            defaults.add(open(f).read().strip())
+    if defaults:
         for it in out:
-            it["default"] = it["id"] == d
+            it["default"] = it["id"] in defaults
     return sorted(out, key=lambda x: (not x.get("default", False), -x["mtime"]))
 
 
@@ -331,6 +355,7 @@ class TrainReq(BaseModel):
     loss: str = "mse"                # mse | quantile
     quantile: float = Field(0.9, gt=0, lt=1)
     target_mode: str = "level"       # level | residual
+    direction: str = "dl"            # dl | ul (ul needs a sim 2.0 dataset)
 
 
 @app.post("/api/train")
@@ -338,14 +363,17 @@ def start_train(req: TrainReq):
     h = check_h(req.horizons)
     if not (1 <= h[0] and h[2] <= 15):
         raise HTTPException(400, "horizons must be within 1–15 s")
-    if req.model not in ("predp", "lstm", "gru", "transformer") or req.features not in ("uni", "multi") \
+    if req.model not in ("predp", "lstm", "gru", "transformer") or req.features not in ("uni", "multi", "pair") \
             or req.horizon_mode not in ("all", "dedicated"):
         raise HTTPException(400, "invalid model/features/mode")
     if req.target not in ("point", "mean", "max") or req.loss not in ("mse", "quantile") \
             or req.target_mode not in ("level", "residual"):
         raise HTTPException(400, "invalid target/loss/target_mode")
+    if req.direction not in ("dl", "ul"):
+        raise HTTPException(400, "direction must be dl or ul")
     safe_join(RUNS, req.run_name)
-    data_dir(req.data)
+    if not _has_dir(data_dir(req.data), req.direction):
+        raise HTTPException(400, f"{req.data} has no {req.direction.upper()} columns (use a sim 2.0 dataset such as data/raw_v2)")
     if run_status(os.path.join(RUNS, req.run_name)) == "running" and os.path.exists(os.path.join(RUNS, req.run_name)):
         raise HTTPException(409, "a run with this name is already training")
     cmd = [sys.executable, "train.py", "--data", req.data, "--run-name", req.run_name,
@@ -353,7 +381,8 @@ def start_train(req: TrainReq):
            "--features", req.features, "--lookback", str(req.lookback), "--hidden", str(req.hidden),
            "--lr", str(req.lr), "--batch-size", str(req.batch_size), "--max-epochs", str(req.max_epochs),
            "--patience", str(req.patience), "--median-filter", str(int(req.median_filter)), "--seed", str(req.seed),
-           "--target", req.target, "--loss", req.loss, "--quantile", str(req.quantile), "--target-mode", req.target_mode]
+           "--target", req.target, "--loss", req.loss, "--quantile", str(req.quantile), "--target-mode", req.target_mode,
+           "--direction", req.direction]
     if req.train_traces:
         cmd += ["--train-traces", str(req.train_traces)]
     return launch("train", req.run_name, cmd, f"runs/_logs/{req.run_name.replace('/', '_')}.log")
@@ -497,6 +526,9 @@ def infer_forecast(run: str, data: str, id: str, h: List[int] = Query(...), star
     """Actual demand and predictions aligned at their TARGET time (t + h), for one window."""
     H = check_h(h)
     df = load_trace(data, id)
+    direction = predictor(run).direction
+    if target_col(SLICES[0], direction) not in df:
+        raise HTTPException(400, f"run {run} predicts {direction.upper()}, but this trace has no {direction.upper()} columns")
     t, pred, truth, conf = forecast_cached(run, data, id, H)
     T = len(df)
     end = min(end or T, T)
@@ -505,7 +537,7 @@ def infer_forecast(run: str, data: str, id: str, h: List[int] = Query(...), star
            "slices": {}, "metrics": {}}
     t0 = int(t[0])
     for s in pred:
-        actual = df[f"{s}_req_prb_mean"].to_numpy()[start:end]
+        actual = df[target_col(s, direction)].to_numpy()[start:end]
         series = {"actual": [r(v) for v in actual]}
         for k, hh in enumerate(H):
             anchor = times - hh
@@ -522,12 +554,13 @@ def infer_forecast(run: str, data: str, id: str, h: List[int] = Query(...), star
         res["metrics"][s] = {str(hh): {k2: r(v2, 3) for k2, v2 in
                                        regression_metrics(truth[s][valid, k], pred[s][valid, k]).items()}
                              for k, hh in enumerate(H)}
-        y = df[f"{s}_req_prb_mean"].to_numpy(np.float64)
+        y = df[target_col(s, direction)].to_numpy(np.float64)
         res["metrics"][s]["persistence"] = {
             str(hh): r(regression_metrics(truth[s][valid, k], y[t[valid]])["r2"], 3) for k, hh in enumerate(H)}
     res["length"] = T
     res["first_anchor"] = t0
     res["has_confidence"] = conf is not None
+    res["direction"] = direction
     return res
 
 
@@ -541,14 +574,16 @@ def infer_replay(run: str, data: str, id: str, t: int, h: List[int] = Query(...)
     H = check_h(h)
     P = predictor(run)
     df = load_trace(data, id)
+    if target_col(SLICES[0], P.direction) not in df:
+        raise HTTPException(400, f"this trace has no {P.direction.upper()} columns")
     T = len(df)
     t = int(min(max(t, P.L - 1), T - 1))
     from infer import packages
     pk = packages(P, df, H, start=t, seconds=1, with_truth=True)
-    out = {"t": t, "lookback": P.L, "horizons": H, "packages": pk, "slices": {}}
+    out = {"t": t, "lookback": P.L, "horizons": H, "packages": pk, "slices": {}, "direction": P.direction}
     lo = max(0, t - past + 1)
     for s in P.slices:
-        y = df[f"{s}_req_prb_mean"].to_numpy()
+        y = df[target_col(s, P.direction)].to_numpy()
         out["slices"][s] = {
             "past": [{"x": int(i - t), "y": r(y[i])} for i in range(lo, t + 1)],
             "future": [{"x": int(i - t), "y": r(y[i])} for i in range(t + 1, min(T, t + 17))],
@@ -566,6 +601,8 @@ def infer_export(run: str, data: str, id: str, h: List[int] = Query(...), start:
     P = predictor(run)
     df = load_trace(data, id)
     from infer import packages
+    if target_col(SLICES[0], P.direction) not in df:
+        raise HTTPException(400, f"this trace has no {P.direction.upper()} columns")
     pk = packages(P, df, H, start=start, seconds=seconds, with_truth=with_truth)
     body = "\n".join(json.dumps(clean_json(p)) for p in pk) + "\n"
     fname = f"a1_packages_{'-'.join(map(str, H))}_{id}.jsonl"
@@ -587,15 +624,15 @@ async def infer_upload(file: UploadFile = File(...)):
         df["t"] = np.arange(len(df))
     if "scenario" not in df:
         df["scenario"] = "stable"
-    need = [f"{s}_req_prb_mean" for s in SLICES]
-    miss = [c for c in need if c not in df]
-    if miss:
-        raise HTTPException(400, f"missing columns: {miss}")
+    dirs = [x for x in ("dl", "ul") if all(target_col(s, x) in df for s in SLICES)]
+    if not dirs:
+        raise HTTPException(400, f"need DL columns {[target_col(s) for s in SLICES]} "
+                                 f"and/or UL columns {[target_col(s, 'ul') for s in SLICES]}")
     base = re.sub(r"[^A-Za-z0-9_\-]", "_", os.path.splitext(file.filename)[0])[:40] or "upload"
     uid = f"{base}_{int(time.time())}"
     os.makedirs(os.path.join(DATA, "_uploads"), exist_ok=True)
     df.to_parquet(os.path.join(DATA, "_uploads", uid + ".parquet"), index=False)
-    return {"data": "upload", "id": uid, "rows": len(df), "columns": list(df.columns)}
+    return {"data": "upload", "id": uid, "rows": len(df), "columns": list(df.columns), "directions": dirs}
 
 
 # ---------------------------------------------------------------- serve the built React app

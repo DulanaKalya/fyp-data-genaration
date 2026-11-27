@@ -53,6 +53,9 @@ function NewEval({ runs, onFinished }: { runs: Run[] | null; onFinished: (tag: s
   useEffect(() => {
     setTag(sel.length ? `ui_${sel.map((s) => s.split('/').pop()).join('_vs_')}`.slice(0, 70).replace(/[^A-Za-z0-9_\-]/g, '_') : '')
   }, [sel.join(',')])
+  const selRuns = runs?.filter((r) => sel.includes(r.id)) ?? []
+  const mixedDir = new Set(selRuns.map((r) => r.direction ?? 'dl')).size > 1
+  const mixedTarget = new Set(selRuns.map((r) => r.target ?? 'point')).size > 1
   const allMode = sel.length > 0 && runs?.filter((r) => sel.includes(r.id)).every((r) => r.horizon_mode === 'all')
   const allowed = allMode ? range(H_MIN, H_MAX) : (runs?.find((r) => r.id === sel[0])?.model_horizons ?? range(H_MIN, H_MAX))
   const run = async () => {
@@ -73,7 +76,7 @@ function NewEval({ runs, onFinished }: { runs: Run[] | null; onFinished: (tag: s
               <label key={r.id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-slate-50">
                 <input type="checkbox" checked={sel.includes(r.id)} onChange={(e) => setSel(e.target.checked ? [...sel, r.id] : sel.filter((x) => x !== r.id))} />
                 <span className="font-mono text-xs">{r.id}</span>
-                <span className="ml-auto text-xs text-slate-400">{r.model} · {r.horizon_mode}</span>
+                <span className="ml-auto text-xs text-slate-400">{(r.direction ?? 'dl').toUpperCase()} · {r.model} · {r.horizon_mode}{r.target && r.target !== 'point' ? ` · ${r.target}` : ''}</span>
               </label>
             ))}
           </div>
@@ -91,8 +94,10 @@ function NewEval({ runs, onFinished }: { runs: Run[] | null; onFinished: (tag: s
             <label className="flex items-center gap-2"><input type="checkbox" checked={ens.blend} onChange={(e) => setEns({ ...ens, blend: e.target.checked })} />
               Blend with persistence <span className="text-xs text-slate-400">(weights fitted on validation)</span></label>
           </div>
+          {mixedDir && <p className="text-xs font-medium text-rose-600">The selected runs mix DL and UL — DL and UL are separate PRB budgets, evaluate them separately.</p>}
+          {mixedTarget && <p className="text-xs font-medium text-rose-600">The selected runs predict different targets (point / average / peak) — pick runs with the same target.</p>}
           <ErrorBox error={err} />
-          <Button onClick={run} disabled={!sel.length || !hValid(H) || !tag || !!last?.running}><Play className="h-4 w-4" /> Run evaluation</Button>
+          <Button onClick={run} disabled={!sel.length || !hValid(H) || !tag || !!last?.running || mixedDir || mixedTarget}><Play className="h-4 w-4" /> Run evaluation</Button>
           {last && (last.running || watching) && (
             <div>
               <div className="mb-1 text-sm">{last.name} {last.running ? <Badge color="blue">running</Badge> : <Badge color="green">finished</Badge>}</div>

@@ -1,8 +1,9 @@
 """Run a trained model on a trace (or any 1 s KPI file) and emit A1 prediction packages.
 
 Each package (one per slice x horizon x prediction time), as in the feasibility report P_i = (D̂, C, T):
-  {"t_pred": 1712, "slice": "urllc", "horizon_s": 7, "target_time": 1719,
+  {"t_pred": 1712, "slice": "urllc", "direction": "dl", "horizon_s": 7, "target_time": 1719,
    "pred_prb": 23.4, "confidence": null, "run_id": "..."}
+direction: "dl" or "ul" (DL and UL are separate PRB budgets; never add them).
 
 Examples:
     python infer.py --run predp_uni_all_5-10-15_full --h 7 9 12 --trace test_000 --start 600 --seconds 60
@@ -37,7 +38,7 @@ def packages(pred_obj, df, horizons, start=None, seconds=None, with_truth=False)
     for i, ti in enumerate(t):
         for s in pred:
             for k, h in enumerate(horizons):
-                p = {"t_pred": int(tcol[ti]), "slice": s, "horizon_s": int(h),
+                p = {"t_pred": int(tcol[ti]), "slice": s, "direction": pred_obj.direction, "horizon_s": int(h),
                      "target_time": int(tcol[ti]) + int(h), "pred_prb": round(float(pred[s][i, k]), 2),
                      "confidence": None if conf is None else round(float(conf[s][i, k]), 3),
                      "run_id": pred_obj.name}

@@ -1,0 +1,12 @@
+{
+ "mins": {
+  "embb_ul_req_prb_mean": 0.0,
+  "mmtc_ul_req_prb_mean": 0.0,
+  "urllc_ul_req_prb_mean": 0.4583600163459778
+ },
+ "maxs": {
+  "embb_ul_req_prb_mean": 136.4642333984375,
+  "mmtc_ul_req_prb_mean": 74.5359115600586,
+  "urllc_ul_req_prb_mean": 134.2107391357422
+ }
+}

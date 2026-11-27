@@ -26,8 +26,23 @@ def cqi_process(rng, n, tick, n_ue, mean, p, ev):
     return np.clip(np.round(x), 1, 15).astype(np.int8)
 
 
-def prb_capacity_bps(cqi, radio):
-    """Bits per second that one PRB carries at the given CQI."""
+def prb_capacity_bps(cqi, radio, direction="dl"):
+    """Bits per second that one PRB carries at the given CQI (DL or UL slots of the TDD pattern)."""
     se = SE_TABLE[cqi.astype(int) - 1]
-    return (radio["re_per_prb_slot"] * (1 - radio["overhead"]) * radio["slots_per_s"]
-            * se * radio["dl_ratio"] * radio["se_scale"])
+    if direction == "dl":
+        return (radio["re_per_prb_slot"] * (1 - radio["overhead"]) * radio["slots_per_s"]
+                * se * radio["dl_ratio"] * radio["se_scale"])
+    return (radio["re_per_prb_slot"] * (1 - radio["ul_overhead"]) * radio["slots_per_s"]
+            * se * radio["ul_ratio"] * radio["se_scale_ul"])
+
+
+def ul_cqi_process(rng, dl_cqi, tick, p):
+    """UL CQI from the same UE's DL CQI (shared path loss): an offset for the lower UE transmit power,
+    an extra penalty at the cell edge (power-limited UEs) and slowly varying UL-specific noise."""
+    n_ue, n = dl_cqi.shape
+    phi = np.exp(-tick / 2.0)
+    eps = rng.normal(0, p["ul_cqi_noise"] * np.sqrt(1 - phi ** 2), (n_ue, n))
+    noise = lfilter([1.0], [1.0, -phi], eps, axis=1)
+    dl = dl_cqi.astype(float)
+    edge = 0.3 * np.maximum(0.0, 9.0 - dl)            # power limit bites at low CQI
+    return np.clip(np.round(dl - p["ul_cqi_offset"] - edge + noise), 1, 15).astype(np.int8)

@@ -15,7 +15,7 @@ export default function InferencePage() {
   const run = runs?.find((r) => r.id === runId)
   useEffect(() => {
     if (runs?.length && !runId) {
-      const pref = runs.find((r) => r.default) ?? runs.find((r) => r.horizon_mode === 'all' && r.slices.length === 3) ?? runs[0]
+      const pref = runs.find((r) => r.default && (r.direction ?? 'dl') === 'dl') ?? runs.find((r) => r.default) ?? runs.find((r) => r.horizon_mode === 'all' && r.slices.length === 3) ?? runs[0]
       setRunId(pref.id)
     }
   }, [runs])
@@ -25,6 +25,17 @@ export default function InferencePage() {
 
   const [src, setSrc] = useState<'dataset' | 'upload'>('dataset')
   const [data, setData] = useState('data/raw')
+  // a UL model needs a dataset with UL columns: switch to the run's own dataset if the current one is DL only
+  useEffect(() => {
+    if (!run || !datasets) return
+    const dir = run.direction ?? 'dl'
+    const cur = datasets.find((d) => d.path === data)
+    if (!(cur?.directions ?? ['dl']).includes(dir)) {
+      const alt = datasets.find((d) => d.path === run.data && (d.directions ?? ['dl']).includes(dir))
+        ?? datasets.find((d) => (d.directions ?? ['dl']).includes(dir))
+      if (alt) setData(alt.path)
+    }
+  }, [run?.id, datasets])
   const { data: splits } = useApi<Record<string, string[]>>(src === 'dataset' ? '/datasets/traces' : null, { data })
   const [split, setSplit] = useState('test')
   const [tid, setTid] = useState('test_000')
@@ -48,9 +59,10 @@ export default function InferencePage() {
       {!runs ? <Spinner /> : !runs.length ? <Empty>No finished runs yet — train one first.</Empty> : (
         <div className="mb-6 grid gap-5 lg:grid-cols-2">
           <Card title="Model & horizons">
-            <Field label="Trained run"><Select value={runId ?? runs[0].id} onChange={setRunId} options={runs.map((r) => r.id)} format={(id) => runs.find((r) => r.id === id)?.default ? `${id}  ★ final model` : id} /></Field>
+            <Field label="Trained run"><Select value={runId ?? runs[0].id} onChange={setRunId} options={runs.map((r) => r.id)} format={(id) => { const r = runs.find((x) => x.id === id); return `${id}${r?.direction === 'ul' ? '  [UL]' : ''}${r?.default ? `  ★ final ${(r.direction ?? 'dl').toUpperCase()} model` : ''}` }} /></Field>
             {run && (
               <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                <Badge color={run.direction === 'ul' ? 'amber' : 'blue'}>{(run.direction ?? 'dl').toUpperCase()}</Badge>
                 <Badge color="blue">{run.model}</Badge><Badge>{run.features}</Badge><Badge>{run.horizon_mode}</Badge>
                 <Badge>lookback {run.lookback} s</Badge><Badge>{run.train_hours} h train</Badge>
                 <Badge>{run.slices.map((s) => SLICE_LABEL[s]).join(' · ')}</Badge>
@@ -128,7 +140,7 @@ function Forecast({ run, source, H }: { run: Run; source: Src; H: number[] }) {
         <ErrorBox error={error} />
         {loading && !f ? <Spinner label="Running the model…" /> : f && Object.keys(f.slices).map((s) => (
           <div key={s} className="mb-3">
-            <div className="mb-1 text-sm font-semibold" style={{ color: SLICE_COLOR[s] }}>{SLICE_LABEL[s]}</div>
+            <div className="mb-1 text-sm font-semibold" style={{ color: SLICE_COLOR[s] }}>{SLICE_LABEL[s]} {(f.direction ?? 'dl').toUpperCase()}</div>
             <TimeChart data={rows} segments={f.segments} height={220} series={[
               { key: `${s}_actual`, name: 'actual', color: SLICE_COLOR[s], width: 2.2 },
               ...FH.map((h, k) => ({ key: `${s}_h${h}`, name: `predicted ${h} s earlier`, color: HORIZON_COLORS[k], width: 1.3, dash: k === 0 ? undefined : k === 1 ? '6 3' : '2 3' })),

@@ -6,7 +6,7 @@ import os
 import numpy as np
 import torch
 
-from prep.data import clean, MinMaxScaler, horizon_targets
+from prep.data import clean, MinMaxScaler, horizon_targets, target_col
 from models.predp import build_model
 
 
@@ -35,6 +35,11 @@ class Predictor:
     def target(self):
         """What the model predicts: point = demand at t+h, mean / max = average / peak over (t, t+h]."""
         return self.cfg.get("target", "point")
+
+    @property
+    def direction(self):
+        """dl (original runs) or ul."""
+        return self.cfg.get("direction", "dl")
 
     @property
     def name(self):
@@ -92,13 +97,14 @@ def predict_with_confidence(P, df, horizons, lo, hi):
     start = max(P.L - 1, lo - P.conf.window - max(horizons) - 2)
     t, pred, truth = P.predict_df(df, horizons, anchors=np.arange(start, hi))
     keep = t >= lo
-    conf = {s: P.conf.compute(s, horizons, pred[s], truth_matured(df, s, t, horizons, P.target))[keep] for s in pred}
+    conf = {s: P.conf.compute(s, horizons, pred[s], truth_matured(df, s, t, horizons, P.target, P.direction))[keep]
+            for s in pred}
     return t[keep], {s: v[keep] for s, v in pred.items()}, {s: v[keep] for s, v in truth.items()}, conf
 
 
-def truth_matured(df, s, t, horizons, kind="point"):
+def truth_matured(df, s, t, horizons, kind="point", direction="dl"):
     """Actual target for each anchor (matures at t+h for every kind); NaN when not yet observed."""
-    return horizon_targets(df[f"{s}_req_prb_mean"].to_numpy(np.float64), t, horizons, kind)
+    return horizon_targets(df[target_col(s, direction)].to_numpy(np.float64), t, horizons, kind)
 
 
 def list_runs(runs_dir="runs"):

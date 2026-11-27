@@ -1,0 +1,560 @@
+{
+ "embb": {
+  "test": {
+   "ul": {
+    "5": {
+     "uni": 0.0574,
+     "uni_std": 0.0042,
+     "pair": 0.0602,
+     "pair_std": 0.0024,
+     "gain": 0.0028,
+     "noise": 0.0085,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "10": {
+     "uni": 0.0931,
+     "uni_std": 0.0042,
+     "pair": 0.0918,
+     "pair_std": 0.002,
+     "gain": -0.0013,
+     "noise": 0.0085,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "15": {
+     "uni": 0.1053,
+     "uni_std": 0.0024,
+     "pair": 0.1058,
+     "pair_std": 0.0014,
+     "gain": 0.0005,
+     "noise": 0.0047,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    }
+   },
+   "dl": {
+    "5": {
+     "uni": 0.035,
+     "uni_std": 0.0013,
+     "pair": 0.0367,
+     "pair_std": 0.0018,
+     "gain": 0.0017,
+     "noise": 0.004,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "10": {
+     "uni": 0.0617,
+     "uni_std": 0.0009,
+     "pair": 0.0626,
+     "pair_std": 0.0015,
+     "gain": 0.001,
+     "noise": 0.004,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "15": {
+     "uni": 0.0829,
+     "uni_std": 0.0017,
+     "pair": 0.0848,
+     "pair_std": 0.0014,
+     "gain": 0.0019,
+     "noise": 0.004,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    }
+   }
+  },
+  "ood": {
+   "ul": {
+    "5": {
+     "uni": 0.0101,
+     "uni_std": 0.0204,
+     "pair": 0.0159,
+     "pair_std": 0.0179,
+     "gain": 0.0058,
+     "noise": 0.0408,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "10": {
+     "uni": 0.018,
+     "uni_std": 0.0169,
+     "pair": 0.0238,
+     "pair_std": 0.0226,
+     "gain": 0.0057,
+     "noise": 0.0452,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "15": {
+     "uni": 0.0299,
+     "uni_std": 0.0008,
+     "pair": 0.0314,
+     "pair_std": 0.0223,
+     "gain": 0.0015,
+     "noise": 0.0447,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    }
+   },
+   "dl": {
+    "5": {
+     "uni": -0.0088,
+     "uni_std": 0.0208,
+     "pair": -0.0267,
+     "pair_std": 0.014,
+     "gain": -0.0179,
+     "noise": 0.0415,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "10": {
+     "uni": -0.0212,
+     "uni_std": 0.0129,
+     "pair": -0.0537,
+     "pair_std": 0.0097,
+     "gain": -0.0325,
+     "noise": 0.0258,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": true
+    },
+    "15": {
+     "uni": -0.031,
+     "uni_std": 0.0201,
+     "pair": -0.0672,
+     "pair_std": 0.014,
+     "gain": -0.0362,
+     "noise": 0.0402,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    }
+   }
+  },
+  "A_gain_somewhere": false,
+  "B_other_direction_not_worse": true,
+  "C_ood_not_worse": false,
+  "decision": "2 separate models"
+ },
+ "urllc": {
+  "test": {
+   "ul": {
+    "5": {
+     "uni": 0.066,
+     "uni_std": 0.0016,
+     "pair": 0.0777,
+     "pair_std": 0.0033,
+     "gain": 0.0117,
+     "noise": 0.0067,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": true,
+     "worse": false
+    },
+    "10": {
+     "uni": 0.1058,
+     "uni_std": 0.0017,
+     "pair": 0.1156,
+     "pair_std": 0.0047,
+     "gain": 0.0098,
+     "noise": 0.0094,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": true,
+     "worse": false
+    },
+    "15": {
+     "uni": 0.1281,
+     "uni_std": 0.0027,
+     "pair": 0.1369,
+     "pair_std": 0.002,
+     "gain": 0.0089,
+     "noise": 0.0055,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": true,
+     "worse": false
+    }
+   },
+   "dl": {
+    "5": {
+     "uni": 0.1122,
+     "uni_std": 0.0025,
+     "pair": 0.1512,
+     "pair_std": 0.0019,
+     "gain": 0.0391,
+     "noise": 0.005,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": true,
+     "worse": false
+    },
+    "10": {
+     "uni": 0.1719,
+     "uni_std": 0.0017,
+     "pair": 0.2121,
+     "pair_std": 0.0039,
+     "gain": 0.0402,
+     "noise": 0.0078,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": true,
+     "worse": false
+    },
+    "15": {
+     "uni": 0.1945,
+     "uni_std": 0.0024,
+     "pair": 0.2214,
+     "pair_std": 0.005,
+     "gain": 0.0268,
+     "noise": 0.0101,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": true,
+     "worse": false
+    }
+   }
+  },
+  "ood": {
+   "ul": {
+    "5": {
+     "uni": -0.0681,
+     "uni_std": 0.0134,
+     "pair": -0.1562,
+     "pair_std": 0.0828,
+     "gain": -0.0881,
+     "noise": 0.1657,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "10": {
+     "uni": -0.0646,
+     "uni_std": 0.0205,
+     "pair": -0.1702,
+     "pair_std": 0.0947,
+     "gain": -0.1056,
+     "noise": 0.1894,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "15": {
+     "uni": -0.0259,
+     "uni_std": 0.011,
+     "pair": -0.1081,
+     "pair_std": 0.0823,
+     "gain": -0.0822,
+     "noise": 0.1645,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    }
+   },
+   "dl": {
+    "5": {
+     "uni": -0.356,
+     "uni_std": 0.0066,
+     "pair": -0.3384,
+     "pair_std": 0.0636,
+     "gain": 0.0176,
+     "noise": 0.1272,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "10": {
+     "uni": -0.3082,
+     "uni_std": 0.0489,
+     "pair": -0.2628,
+     "pair_std": 0.0335,
+     "gain": 0.0454,
+     "noise": 0.0978,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "15": {
+     "uni": -0.1479,
+     "uni_std": 0.033,
+     "pair": -0.143,
+     "pair_std": 0.032,
+     "gain": 0.0049,
+     "noise": 0.066,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    }
+   }
+  },
+  "A_gain_somewhere": true,
+  "B_other_direction_not_worse": true,
+  "C_ood_not_worse": true,
+  "decision": "1 model (pair)"
+ },
+ "mmtc": {
+  "test": {
+   "ul": {
+    "5": {
+     "uni": 0.0558,
+     "uni_std": 0.0022,
+     "pair": 0.0455,
+     "pair_std": 0.0134,
+     "gain": -0.0103,
+     "noise": 0.0267,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "10": {
+     "uni": 0.0841,
+     "uni_std": 0.0029,
+     "pair": 0.0593,
+     "pair_std": 0.0307,
+     "gain": -0.0248,
+     "noise": 0.0614,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "15": {
+     "uni": 0.0981,
+     "uni_std": 0.0006,
+     "pair": 0.0756,
+     "pair_std": 0.0234,
+     "gain": -0.0224,
+     "noise": 0.0468,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    }
+   },
+   "dl": {
+    "5": {
+     "uni": 0.1024,
+     "uni_std": 0.0035,
+     "pair": 0.0995,
+     "pair_std": 0.0046,
+     "gain": -0.0029,
+     "noise": 0.0092,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "10": {
+     "uni": 0.1469,
+     "uni_std": 0.001,
+     "pair": 0.1369,
+     "pair_std": 0.0054,
+     "gain": -0.01,
+     "noise": 0.0107,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "15": {
+     "uni": 0.1552,
+     "uni_std": 0.0011,
+     "pair": 0.1454,
+     "pair_std": 0.0053,
+     "gain": -0.0098,
+     "noise": 0.0106,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    }
+   }
+  },
+  "ood": {
+   "ul": {
+    "5": {
+     "uni": -0.0049,
+     "uni_std": 0.0006,
+     "pair": -0.0748,
+     "pair_std": 0.0196,
+     "gain": -0.0699,
+     "noise": 0.0392,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": true
+    },
+    "10": {
+     "uni": 0.0134,
+     "uni_std": 0.011,
+     "pair": -0.0913,
+     "pair_std": 0.0659,
+     "gain": -0.1047,
+     "noise": 0.1318,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "15": {
+     "uni": 0.0362,
+     "uni_std": 0.0145,
+     "pair": -0.054,
+     "pair_std": 0.0479,
+     "gain": -0.0902,
+     "noise": 0.0958,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    }
+   },
+   "dl": {
+    "5": {
+     "uni": -0.0039,
+     "uni_std": 0.0063,
+     "pair": -0.019,
+     "pair_std": 0.0336,
+     "gain": -0.015,
+     "noise": 0.0672,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "10": {
+     "uni": 0.0441,
+     "uni_std": 0.0019,
+     "pair": 0.0003,
+     "pair_std": 0.0341,
+     "gain": -0.0438,
+     "noise": 0.0681,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    },
+    "15": {
+     "uni": 0.0917,
+     "uni_std": 0.0054,
+     "pair": 0.0508,
+     "pair_std": 0.026,
+     "gain": -0.0409,
+     "noise": 0.0519,
+     "seeds": [
+      2,
+      3
+     ],
+     "better": false,
+     "worse": false
+    }
+   }
+  },
+  "A_gain_somewhere": false,
+  "B_other_direction_not_worse": true,
+  "C_ood_not_worse": false,
+  "decision": "2 separate models"
+ }
+}

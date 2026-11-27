@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CheckCircle2, Database, Play, XCircle } from 'lucide-react'
-import { api, useApi, SLICES, type Dataset, type Job } from '../lib/api'
-import { Badge, Button, Card, ErrorBox, Field, LogBox, NumberInput, PageHeader, Select, Spinner, Stat, Tabs, TextInput } from '../components/ui'
+import { api, useApi, SLICES, type Dataset, type Direction, type Job } from '../lib/api'
+import { Badge, Button, Card, ErrorBox, Field, LogBox, NumberInput, PageHeader, Segmented, Select, Spinner, Stat, Tabs, TextInput } from '../components/ui'
 import { ScenarioLegend, StackedChart, TimeChart, XYChart } from '../components/charts'
 import { SLICE_COLOR, SLICE_LABEL, fmt } from '../lib/theme'
 
@@ -13,6 +13,9 @@ export default function DatasetPage() {
     if (datasets?.length && !datasets.find((d) => d.path === data)) setData(datasets[0].path)
   }, [datasets])
   const ds = datasets?.find((d) => d.path === data)
+  const hasUl = !!ds?.directions?.includes('ul')
+  const [dir, setDir] = useState<Direction>('dl')
+  useEffect(() => { if (!hasUl) setDir('dl') }, [hasUl])
   return (
     <>
       <PageHeader icon={<Database className="h-5 w-5" />} title="Dataset" subtitle="Testbed-matched traffic simulator · 1 s rows · requested vs allocated PRBs" />
@@ -24,7 +27,12 @@ export default function DatasetPage() {
               <Field label="Dataset" className="w-64">
                 <Select value={data} onChange={setData} options={datasets.map((d) => d.path)} />
               </Field>
-              {ds && <span className="pb-2 text-sm text-slate-500">sim v{ds.sim_version} · {ds.trace_hours} h per trace · {ds.total_prb} PRBs</span>}
+              {hasUl && (
+                <Field label="Direction">
+                  <Segmented value={dir} onChange={setDir} options={[{ value: 'dl', label: 'Downlink (DL)' }, { value: 'ul', label: 'Uplink (UL)' }]} />
+                </Field>
+              )}
+              {ds && <span className="pb-2 text-sm text-slate-500">sim v{ds.sim_version} · {ds.trace_hours} h per trace · {ds.total_prb} PRBs{hasUl ? ' · DL + UL' : ' · DL only'}</span>}
             </div>
             {ds && (
               <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -33,8 +41,8 @@ export default function DatasetPage() {
                 ))}
               </div>
             )}
-            <Checks data={data} />
-            <TraceViewer data={data} ds={ds} />
+            <Checks data={data} dir={dir} />
+            <TraceViewer data={data} ds={ds} dir={dir} />
           </>
         )
       ) : <Generate onDone={reload} />}
@@ -42,13 +50,15 @@ export default function DatasetPage() {
   )
 }
 
-function Checks({ data }: { data: string }) {
+function Checks({ data, dir }: { data: string; dir: Direction }) {
   const { data: s } = useApi<any>('/datasets/summary', { data })
   if (!s) return <Spinner />
   if (!s.available) return <Card title="Dataset checks" className="mb-6"><p className="text-sm text-slate-500">No check report for this dataset.</p></Card>
+  const D = dir === 'ul' && s.ul ? s.ul : s        // UL statistics live under summary.ul
   const lags = Array.from({ length: 30 }, (_, i) => i + 1)
-  const acf = lags.map((L) => ({ lag: L, ...Object.fromEntries(SLICES.map((sl) => [sl, s.acf_train[sl][String(L)]])) }))
-  const pers = Array.from({ length: 15 }, (_, i) => i + 1).map((h) => ({ h, ...Object.fromEntries(SLICES.map((sl) => [sl, s.persistence_r2_test[sl][String(h)]])) }))
+  const acf = lags.map((L) => ({ lag: L, ...Object.fromEntries(SLICES.map((sl) => [sl, D.acf_train[sl][String(L)]])) }))
+  const pers = Array.from({ length: 15 }, (_, i) => i + 1).map((h) => ({ h, ...Object.fromEntries(SLICES.map((sl) => [sl, D.persistence_r2_test[sl][String(h)]])) }))
+  const U = dir.toUpperCase()
   const series = SLICES.map((sl) => ({ key: sl, name: SLICE_LABEL[sl], color: SLICE_COLOR[sl] }))
   return (
     <div className="mb-6 grid gap-5 lg:grid-cols-3">
@@ -62,28 +72,48 @@ function Checks({ data }: { data: string }) {
           ))}
         </ul>
         <div className="mt-5 border-t border-slate-100 pt-4">
-          <div className="mb-2 text-xs font-medium text-slate-500">Requested PRBs (train)</div>
+          <div className="mb-2 text-xs font-medium text-slate-500">{U} requested PRBs (train)</div>
           <table className="w-full text-sm">
             <thead><tr className="text-left text-xs text-slate-400"><th>slice</th><th>mean</th><th>p95</th><th>max</th></tr></thead>
             <tbody>{SLICES.map((sl) => (
               <tr key={sl}><td className="py-1 font-medium" style={{ color: SLICE_COLOR[sl] }}>{SLICE_LABEL[sl]}</td>
-                <td>{fmt(s.stats_train[sl].mean, 1)}</td><td>{fmt(s.stats_train[sl]['95%'], 1)}</td><td>{fmt(s.stats_train[sl].max, 1)}</td></tr>
+                <td>{fmt(D.stats_train[sl].mean, 1)}</td><td>{fmt(D.stats_train[sl]['95%'], 1)}</td><td>{fmt(D.stats_train[sl].max, 1)}</td></tr>
             ))}</tbody>
           </table>
-          <div className="mt-3 text-xs text-slate-500">Over capacity (total &gt; 162): <b>{(100 * s.frac_over_capacity_train).toFixed(1)}%</b> of seconds</div>
+          <div className="mt-3 text-xs text-slate-500">{U} over capacity (total &gt; 162): <b>{(100 * D.frac_over_capacity_train).toFixed(1)}%</b> of seconds</div>
         </div>
       </Card>
-      <Card title="Autocorrelation" subtitle="Demand still correlated 5–15 s ahead → predictable">
+      <Card title={`Autocorrelation (${U})`} subtitle="Demand still correlated 5–15 s ahead → predictable">
         <XYChart data={acf} xKey="lag" series={series} xLabel="lag (s)" yLabel="ACF" shade={[5, 15]} height={250} />
       </Card>
-      <Card title="Persistence baseline R²" subtitle="ŷ(t+h) = y(t) on test — the bar to beat">
+      <Card title={`Persistence baseline R² (${U})`} subtitle="ŷ(t+h) = y(t) on test — the bar to beat">
         <XYChart data={pers} xKey="h" series={series} xLabel="horizon (s)" yLabel="R²" shade={[5, 15]} height={250} />
       </Card>
+      {s.direction_stats && (
+        <Card title="DL vs UL" subtitle="Training data · UL and DL are separate PRB budgets (TDD slots) — never added" className="lg:col-span-3">
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
+              <th className="py-2">Slice</th><th>Mean DL / UL</th><th>UL ÷ DL</th><th>Variability CV DL / UL</th><th>Skew DL / UL</th>
+              <th>Saturated DL / UL</th><th>corr(DL, UL) same time</th><th>DL now → UL in 5 / 10 / 15 s</th></tr></thead>
+            <tbody>{SLICES.map((sl) => {
+              const st = s.direction_stats[sl]; const lk = s.dl_ul_link?.[sl]
+              return (
+                <tr key={sl} className="border-b border-slate-100 last:border-0">
+                  <td className="py-1.5 font-medium" style={{ color: SLICE_COLOR[sl] }}>{SLICE_LABEL[sl]}</td>
+                  <td>{fmt(st.dl.mean, 1)} / {fmt(st.ul.mean, 1)}</td><td>{fmt(s.direction_stats.ul_dl_mean_ratio[sl], 2)}</td>
+                  <td>{fmt(st.dl.cv, 2)} / <b>{fmt(st.ul.cv, 2)}</b></td><td>{fmt(st.dl.skew, 2)} / {fmt(st.ul.skew, 2)}</td>
+                  <td>{(100 * st.dl.saturated_frac).toFixed(1)}% / {(100 * st.ul.saturated_frac).toFixed(1)}%</td>
+                  <td>{fmt(lk?.corr_lag0, 2)}</td><td>{lk ? lk.dl_leads_ul_at_5_10_15.map((v: number) => fmt(v, 2)).join(' / ') : '–'}</td>
+                </tr>)
+            })}</tbody>
+          </table>
+        </Card>
+      )}
     </div>
   )
 }
 
-function TraceViewer({ data, ds }: { data: string; ds?: Dataset }) {
+function TraceViewer({ data, ds, dir }: { data: string; ds?: Dataset; dir: Direction }) {
   const { data: splits } = useApi<Record<string, string[]>>('/datasets/traces', { data })
   const [split, setSplit] = useState('test')
   const [tid, setTid] = useState('test_000')
@@ -92,7 +122,7 @@ function TraceViewer({ data, ds }: { data: string; ds?: Dataset }) {
   useEffect(() => {
     if (splits && !splits[split]?.includes(tid)) setTid(splits[split]?.[0] ?? '')
   }, [splits, split])
-  const { data: tr, loading, error } = useApi<any>(tid ? '/trace' : null, { data, id: tid, start: start * 60, end: (start + len) * 60 })
+  const { data: tr, loading, error } = useApi<any>(tid ? '/trace' : null, { data, id: tid, start: start * 60, end: (start + len) * 60, direction: dir })
   const rows = useMemo(() => {
     if (!tr) return []
     return tr.t.map((t: number, i: number) => {
@@ -107,7 +137,7 @@ function TraceViewer({ data, ds }: { data: string; ds?: Dataset }) {
   }, [tr])
   const totalMin = ds ? ds.trace_hours * 60 : 60
   return (
-    <Card title="Trace viewer" subtitle="Requested (solid) vs allocated (dashed) PRBs per slice" actions={<ScenarioLegend />}>
+    <Card title={`Trace viewer — ${dir.toUpperCase()}`} subtitle={`${dir === 'ul' ? 'Uplink' : 'Downlink'} requested (solid) vs allocated (dashed) PRBs per slice`} actions={<ScenarioLegend />}>
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         <Field label="Split"><Select value={split} onChange={setSplit} options={splits ? Object.keys(splits) : [split]} /></Field>
         <Field label="Trace"><Select value={tid} onChange={setTid} options={splits?.[split] ?? [tid]} /></Field>

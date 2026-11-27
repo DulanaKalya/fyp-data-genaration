@@ -1,5 +1,5 @@
 # Testbed-matched slice traffic simulator (see PLAN.md, Phase 1)
-sim_version: "1.0"
+sim_version: "2.0"     # 2.0 = DL (identical to 1.0) + UL
 tick_s: 0.1            # internal resolution (100 ms)
 out_dt_s: 1.0          # output resolution (1 s)
 trace_hours: 1.0
@@ -14,6 +14,10 @@ radio:                 # Band n78, 60 MHz, 30 kHz SCS
   overhead: 0.14       # DMRS / control / reference signals
   dl_ratio: 0.7        # TDD downlink share
   se_scale: 1.0        # CALIBRATE from iperf3 test on the testbed
+  # --- uplink (PLAN_UL.md). Lab TDD default: 6 DL + 1 special (8 DL sym) + 3 UL slots of 10
+  ul_ratio: 0.30       # TDD uplink share (dl_ratio kept at 0.7 so DL data stay unchanged)
+  ul_overhead: 0.18    # DMRS + PUCCH / SRS
+  se_scale_ul: 1.0     # CALIBRATE from an iperf3 UL test
 
 slices:
   names: [embb, urllc, mmtc]
@@ -23,6 +27,11 @@ slices:
   weight: [1.0, 2.0, 0.5]    # priority weight in the allocator
   base_latency_ms: [8, 2, 15]
   ue_max_prb: [60, 30, 25]  # per-UE demand cap (rate adaptation to the channel)
+  ue_max_prb_ul: [60, 30, 25]
+  # UL uses the same min/max/weight as DL (the lab applies identical quota ratios to PRB_DL and PRB_UL)
+
+ul:
+  enabled: true        # false -> DL-only dataset (identical to sim 1.0)
 
 allocator:
   mode: proportional   # proportional | static
@@ -77,6 +86,28 @@ profiles:
       ue_mean_off_s: [30, 120]
       churn_mean_on_s: [15, 60]
       churn_mean_off_s: [10, 40]
+    # UL parameters: own section + own RNG stream, so the DL draws above are unchanged
+    per_trace_ul:
+      ul_cqi_offset: [1, 3]            # UL CQI below DL (UE power limit)
+      ul_cqi_noise: [0.3, 1.0]
+      ul_grant_overhead: [1.05, 1.3]   # BSR granularity / padding
+      ul_min_prb_active: [0.1, 0.4]    # mean PRBs/slot a UE with any UL data costs (SR/BSR + min grant)
+      embb_ul_ack_frac: [0.02, 0.05]   # TCP ACKs relative to the DL rate
+      embb_ul_cameras: [0, 5]          # camera streams over one uploader eMBB UE (lab: up to 5 AGV cameras)
+      embb_ul_camera_mbps: [1, 4]      # per stream
+      embb_ul_camera_noise: [0.1, 0.3]
+      urllc_ul_ack_ratio: [0.05, 0.3]  # UL acknowledgement size relative to the DL command traffic
+      urllc_ul_ack_lag_ticks: [0, 2]   # reply lag in 100 ms ticks
+      urllc_ul_alarm_mbps: [0.3, 1.5]  # alarm / status reports in burst scenarios
+      urllc_ul_alarm_ramp_s: [1.0, 3.0]
+      mmtc_ul_sources: [1, 10]         # telemetry sources per mMTC UE (lab: 5 AGVs)
+      mmtc_ul_rate_hz: [1, 4]          # records per second per source (lab: 2 Hz)
+      mmtc_ul_record_kb: [0.1, 1.0]    # combined record: position, speed, battery, status
+      mmtc_ul_event_mult: [2, 3]       # report-rate multiplier during burst scenarios
+      mmtc_ul_overhead: [1.2, 1.6]
+    events_ul:
+      embb_ul_camera_on_s: [30, 300]   # camera session length
+      embb_ul_camera_off_s: [10, 180]
     events:
       seg_dur_s:
         stable: [20, 120]
@@ -106,6 +137,11 @@ profiles:
       cqi_tau_s: [2, 5]
       cqi_drops_per_min: [0.6, 1.2]
       mmtc_wave_period_s: [15, 30]
+    per_trace_ul:
+      embb_ul_cameras: [4, 8]          # more cameras than in training
+      urllc_ul_alarm_mbps: [1.5, 3.0]
+      mmtc_ul_sources: [8, 16]
+      mmtc_ul_event_mult: [3, 6]
     events:
       seg_dur_s:
         stable: [10, 60]
