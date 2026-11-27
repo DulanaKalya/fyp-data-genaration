@@ -30,11 +30,18 @@ def pid_alive(pid):
         os.kill(pid, 0)
     except OSError:
         return False
+    # A finished child stays as a zombie until reaped, and os.kill() still succeeds on it.
     try:
         with open(f"/proc/{pid}/stat") as f:
             return f.read().split()[2] != "Z"
     except OSError:
-        return True
+        pass  # no /proc (e.g. macOS)
+    try:
+        ps = subprocess.run(["ps", "-o", "stat=", "-p", str(pid)], capture_output=True, text=True)
+    except OSError:
+        return True  # no ps either: keep the os.kill() answer
+    state = ps.stdout.strip()
+    return bool(state) and not state.startswith("Z")
 
 
 def launch(kind, name, cmd, log_rel, meta=None):

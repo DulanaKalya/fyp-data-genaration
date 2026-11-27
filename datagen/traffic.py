@@ -79,7 +79,7 @@ def mmtc_ue(rng, n, tick, intensity, p, ev):
     """Device group: active devices x report rate x payload, with synchronized report waves."""
     target = p["mmtc_dev_max"] * intensity
     n_dev = pd.Series(target).ewm(alpha=tick / p["mmtc_dev_tau_s"]).mean().to_numpy()
-    n_dev *= rng.lognormal(-0.005, 0.1, n)
+    n_dev = n_dev * rng.lognormal(-0.005, 0.1, n)   # not in place: pandas 3 returns a read-only array
     reports = n_dev / p["mmtc_interval_s"]
     t = rng.uniform(0, p["mmtc_wave_period_s"])
     while t < n * tick:
