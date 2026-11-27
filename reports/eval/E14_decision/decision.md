@@ -58,3 +58,11 @@ A gain > noise: no · B other direction not worse: yes · C OOD not worse: no
 | ood | DL | 5 s | -0.4% ± 0.6 | -1.9% ± 3.4 | -1.5% | 6.7% |
 | ood | DL | 10 s | +4.4% ± 0.2 | +0.0% ± 3.4 | -4.4% | 6.8% |
 | ood | DL | 15 s | +9.2% ± 0.5 | +5.1% ± 2.6 | -4.1% | 5.2% |
+
+## Review of the rule's outcome (per seed, 2026-11-27)
+
+The rule picked `pair` for URLLC in both directions. Looking at each seed:
+- **URLLC DL:** `pair` is better on test in every seed (R² +0.04 to +0.06) and about equal to `uni` on OOD. **Kept: the final DL model uses DL + UL history for URLLC.**
+- **URLLC UL:** the test gain is small (+0.01 R²), and `pair` is worse on OOD **in every seed** at 10–15 s (R² 0.28–0.47 vs 0.49–0.52 at 10 s).
+  The rule let it pass only because one seed (s1) inflated the noise threshold. **Final UL model: own history for all slices**
+  (`E13/predp_ul_point_s0`). The composed alternative is kept as `FINAL/predp_ul_point_urllc_pair_ALT`.

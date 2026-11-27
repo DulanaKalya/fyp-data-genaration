@@ -28,11 +28,10 @@ export default function InferencePage() {
   // a UL model needs a dataset with UL columns: switch to the run's own dataset if the current one is DL only
   useEffect(() => {
     if (!run || !datasets) return
-    const dir = run.direction ?? 'dl'
-    const cur = datasets.find((d) => d.path === data)
-    if (!(cur?.directions ?? ['dl']).includes(dir)) {
-      const alt = datasets.find((d) => d.path === run.data && (d.directions ?? ['dl']).includes(dir))
-        ?? datasets.find((d) => (d.directions ?? ['dl']).includes(dir))
+    const need = run.input_directions ?? [run.direction ?? 'dl']     // e.g. a URLLC pair model reads DL + UL
+    const ok = (d?: Dataset) => need.every((x) => (d?.directions ?? ['dl']).includes(x))
+    if (!ok(datasets.find((d) => d.path === data))) {
+      const alt = datasets.find((d) => d.path === run.data && ok(d)) ?? datasets.find((d) => ok(d))
       if (alt) setData(alt.path)
     }
   }, [run?.id, datasets])
@@ -69,6 +68,7 @@ export default function InferencePage() {
                 {run.target && run.target !== 'point' && <Badge color="amber">target: {run.target === 'mean' ? 'average' : 'peak'} over next h s</Badge>}
                 {run.loss === 'quantile' && <Badge color="amber">q{Math.round((run.quantile ?? 0.9) * 100)} (safe side)</Badge>}
                 {run.target_mode === 'residual' && <Badge color="amber">residual</Badge>}
+                {(run.input_directions?.length ?? 1) > 1 && <Badge color="amber">reads DL + UL</Badge>}
               </div>
             )}
             <div className="mt-4"><HorizonPicker value={H} onChange={setH} allowed={allowed} /></div>

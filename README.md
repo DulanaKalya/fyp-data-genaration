@@ -2,11 +2,11 @@
 
 Final Year Project, University of Moratuwa (Group 17).
 
-This repository holds the **prediction part** of the system. It forecasts how many PRBs each network slice (eMBB, URLLC, mMTC) will **request** 1–15 s ahead, together with a **confidence** value. Each forecast is sent as an A1 package so the RIC can reserve resources before the demand arrives.
+This repository holds the **prediction part** of the system. It forecasts how many PRBs each network slice (eMBB, URLLC, mMTC) will **request** 1–15 s ahead, for the **downlink (DL) and uplink (UL) separately**, together with a **confidence** value. Each forecast is sent as an A1 package so the RIC can reserve resources before the demand arrives.
 
 It contains:
 
-1. **A 5G traffic simulator** matched to our testbed. It generates the training dataset (130 h, sampled at 1 s).
+1. **A 5G traffic simulator** matched to our testbed. It generates the training dataset (130 h, sampled at 1 s): `data/raw` (DL only) and `data/raw_v2` (DL + UL, DL columns identical). See [PLAN_UL.md](PLAN_UL.md).
 2. **PreDP**, the attention Bi-LSTM from the PreNS paper. It ships with UT-LSTM, UT-GRU, UT-Transformer, ARIMA, persistence and moving-average baselines.
 3. **Any 3 horizons between 1 and 15 s**, for example 5/10/15, 7/9/12 or 1/3/5. One model predicts every horizon from 1 to 15 s, so changing the horizons needs no retraining.
 4. **Confidence calibration.** Confidence comes from the error of recent predictions whose true values are now known.
@@ -283,8 +283,30 @@ The API is listed at http://127.0.0.1:8765/docs. Port 8765 is used because 8000 
 
 Test split: 18 unseen 1 h traces, 64,008 windows. Values are the mean R² of the 3 slices.
 
-### Final model
-`runs/E12/predp_final_point_s0` is PreDP **without the median filter and with a 60 s input**, the best settings from E4 and E5. The UI uses it by default (set in `runs/DEFAULT_RUN`).
+### Final models (deployment)
+| Direction | Run | Inputs per slice | UI default |
+|---|---|---|---|
+| **DL** | `FINAL/predp_dl_point` | eMBB, mMTC: own DL history · **URLLC: DL + UL history** (E14) | `runs/DEFAULT_RUN` |
+| **UL** | `E13/predp_ul_point_s0` | Own UL history for every slice | `runs/DEFAULT_RUN_UL` |
+
+All use PreDP without the median filter, a 60 s input and 1–15 s outputs, on `data/raw_v2`. `FINAL/predp_dl_point` is composed (`experiments/compose_run.py`) from `E12/predp_final_point_s0` (eMBB, mMTC) and `E14/predp_dl_pair_s0` (URLLC). It needs **UL measurements as input** for URLLC; if UL data is unavailable, use `E12/predp_final_point_s0` (DL only).
+
+Peak-target models (busiest second in the next h s): `E12/predp_final_max_s0` (DL), `E13/predp_ul_max_s0` (UL), and the safe-side `E13/predp_ul_max_q90_s0`.
+
+| Final model, mean R² (same 2000 windows as ARIMA) | @5 s | @10 s | @15 s |
+|---|---|---|---|
+| **DL final** (`FINAL/predp_dl_point`) | **0.739** | **0.596** | **0.511** |
+| DL, own history only | 0.724 | 0.571 | 0.491 |
+| DL ARIMA / persistence | 0.701 / 0.673 | 0.508 / 0.426 | 0.421 / 0.290 |
+| **UL final** (`E13/predp_ul_point_s0`) | **0.791** | **0.618** | **0.534** |
+| UL ARIMA / persistence | 0.786 / 0.768 | 0.599 / 0.547 | 0.505 / 0.418 |
+| **UL peak** (`E13/predp_ul_max_s0`) | **0.885** | **0.800** | **0.748** |
+| UL peak ARIMA / persistence | 0.847 / 0.843 | 0.702 / 0.687 | 0.593 / 0.564 |
+
+URLLC DL gains most from the UL history: R² 0.611 / 0.426 / 0.327 vs 0.564 / 0.347 / 0.261 with DL history only.
+
+### PreNS comparison model (DL, own history only)
+`runs/E12/predp_final_point_s0` is PreDP **without the median filter and with a 60 s input**, the best settings from E4 and E5, using each slice's own DL history only (like PreNS). It is the model in the PreNS comparison.
 
 | Model | PreNS R² (200 ms) | @1 s | @5 s | @10 s | @15 s |
 |---|---|---|---|---|---|
@@ -313,6 +335,8 @@ On the **peak demand over the next h s** target (`E12/predp_final_max_s0`), the 
 - **Safe-side URLLC forecasts** (E11, 90th percentile) cut under-prediction from about 80% (reactive) to 12%. The average shortfall drops from 8–11 to 1–1.6 PRBs, at the cost of reserving about 12–18 extra PRBs.
 - **Extra KPIs as inputs (E3) overfit.** They help slightly on normal traffic and hurt badly out of distribution. **More data (E8)** brings little beyond 25–50 h.
 - **One `all`-horizons model matches dedicated 3-horizon models** (E2), so the UI can switch horizons without retraining.
+- **Uplink is as predictable as downlink** (E13), and its peaks even slightly more. Separate UL models beat ARIMA and persistence. UL is spikier (higher CV and skew, especially mMTC telemetry).
+- **DL and UL help each other only for URLLC** (E14): UL status and alarm reports announce DL command bursts, so the UL history improves URLLC DL forecasts. For eMBB and mMTC, separate models are best.
 - **Limitation: traffic outside the training range** (E6). With long URLLC bursts and higher load, persistence beats the model. Testbed fine-tuning (E7) is needed before deployment.
 
 The full comparison (RMSE/MAE in z-units, per-slice results, cost) is in [`reports/prens_comparison/comparison.md`](reports/prens_comparison/comparison.md) and in the UI under **Evaluate → PreNS paper comparison**.
@@ -338,7 +362,9 @@ Run with `python experiments/queue.py --exp E1 E3 --seeds 0 1 2 --parallel 2`. T
 | E9 | Level-invariant target (`--target-mode residual`): predicts the change from the last value | `runs/E9/` | ✅ OOD better (+0.04 R² at 5 s, URLLC +0.09), but test worse (−0.007 / −0.020 / −0.032). Not used. |
 | E10 | Reservation targets: **average** and **peak** demand over the next h s (`--target mean/max`) | `runs/E10/` | ✅ **Peak:** R² 0.81/0.73/0.68, beats ARIMA (0.82/0.69/0.57) at 10–15 s. **Average:** R² 0.83/0.76/0.72, but ARIMA is as good or better. |
 | E11 | Safe-side forecasts: 90th percentile (`--loss quantile`), for the point and peak targets | `runs/E11/` | ✅ URLLC under-prediction drops to 12% (reactive: 72–85%); shortfall 1–1.6 PRBs |
-| E12 | **Final candidates**: no median filter + 60 s lookback, for the point and peak targets | `runs/E12/` | ✅ **final model**: 0.726 / 0.566 / 0.481 (point), 0.851 / 0.766 / 0.708 (peak) |
+| E12 | **Final candidates**: no median filter + 60 s lookback, for the point and peak targets | `runs/E12/` | ✅ **PreNS-comparison final**: 0.726 / 0.566 / 0.481 (point), 0.851 / 0.766 / 0.708 (peak) |
+| E13 | **Uplink models** (`data/raw_v2`, `--direction ul`): point, peak, q90, peak-q90 | `runs/E13/` | ✅ point 0.791 / 0.618 / 0.534 and peak 0.885 / 0.800 / 0.748, both above ARIMA (mMTC UL point: tied with ARIMA). Peak-q90 cuts URLLC UL under-prediction to 11–12%. |
+| E14 | **1 or 2 models per slice?** `uni` (own direction) vs `pair` (DL + UL history), 3 seeds | `runs/E14/`, `reports/eval/E14_decision/` | ✅ eMBB and mMTC: 2 separate models. **URLLC DL: pair** (+2.7 to +4.0% skill, OOD equal). URLLC UL: separate; pair gains only +1% on test and is worse on OOD in every seed. |
 
 The whole remaining set runs overnight with `experiments/run_remaining.sh`, which logs to `runs/_logs/remaining.log`.
 

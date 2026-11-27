@@ -1,0 +1,83 @@
+{
+ "direction": "dl",
+ "target": "point",
+ "loss": "mse",
+ "quantile": null,
+ "target_mode": "level",
+ "model": "predp",
+ "horizon_mode": "all",
+ "horizons_selected": [
+  5,
+  10,
+  15
+ ],
+ "model_horizons": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15
+ ],
+ "lookback": 60,
+ "hidden": 64,
+ "dropout": 0.0,
+ "lr": 0.001,
+ "batch_size": 32,
+ "max_epochs": 200,
+ "patience": 20,
+ "median_filter": 0,
+ "data": "data/raw_v2",
+ "sim_version": "1.0",
+ "train_traces": 84,
+ "train_hours": 84.0,
+ "run_id": "FINAL/predp_dl_point",
+ "features": "mixed",
+ "groups": {
+  "embb": {
+   "features": [
+    "embb_req_prb_mean"
+   ],
+   "targets": [
+    "embb_req_prb_mean"
+   ]
+  },
+  "urllc": {
+   "features": [
+    "urllc_req_prb_mean",
+    "urllc_ul_req_prb_mean"
+   ],
+   "targets": [
+    "urllc_req_prb_mean"
+   ]
+  },
+  "mmtc": {
+   "features": [
+    "mmtc_req_prb_mean"
+   ],
+   "targets": [
+    "mmtc_req_prb_mean"
+   ]
+  }
+ },
+ "seed": {
+  "embb": 0,
+  "urllc": 0,
+  "mmtc": 0
+ },
+ "composed_from": {
+  "embb": "E12/predp_final_point_s0",
+  "urllc": "E14/predp_dl_pair_s0",
+  "mmtc": "E12/predp_final_point_s0"
+ },
+ "created": "2026-11-27T14:10:32"
+}

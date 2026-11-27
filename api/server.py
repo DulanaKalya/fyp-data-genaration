@@ -131,6 +131,16 @@ def predictor(run):
     return _predictor(d, os.path.getmtime(mf))
 
 
+def check_inputs(P, df):
+    """400 if the trace lacks a column the run reads or predicts (e.g. UL inputs of a URLLC pair model)."""
+    need = {c for g in P.cfg["groups"].values() for c in g["features"] + g["targets"]}
+    miss = sorted(need - set(df.columns))
+    if miss:
+        dirs = sorted({"UL" if "_ul_" in c else "DL" for c in miss})
+        raise HTTPException(400, f"run {P.name} needs {'/'.join(dirs)} columns this trace doesn't have "
+                                 f"(e.g. {miss[0]}); use a DL + UL dataset such as data/raw_v2")
+
+
 def check_h(h):
     h = sorted(h)
     if len(h) != 3 or not (1 <= h[0] < h[1] < h[2] <= 15):
@@ -291,6 +301,9 @@ def list_runs():
                     "created": cfg.get("created"), "data": cfg.get("data"), "mtime": os.path.getmtime(root),
                     "has_confidence": os.path.exists(os.path.join(root, "confidence.json")),
                     "direction": cfg.get("direction", "dl"),
+                    # directions the model READS (a URLLC 'pair' model needs DL and UL inputs)
+                    "input_directions": sorted({"ul" if "_ul_" in c else "dl"
+                                                for g in cfg["groups"].values() for c in g["features"]}),
                     "target": cfg.get("target", "point"), "loss": cfg.get("loss", "mse"),
                     "quantile": cfg.get("quantile"), "target_mode": cfg.get("target_mode", "level")}
             if st == "done":
@@ -527,8 +540,7 @@ def infer_forecast(run: str, data: str, id: str, h: List[int] = Query(...), star
     H = check_h(h)
     df = load_trace(data, id)
     direction = predictor(run).direction
-    if target_col(SLICES[0], direction) not in df:
-        raise HTTPException(400, f"run {run} predicts {direction.upper()}, but this trace has no {direction.upper()} columns")
+    check_inputs(predictor(run), df)
     t, pred, truth, conf = forecast_cached(run, data, id, H)
     T = len(df)
     end = min(end or T, T)
@@ -574,8 +586,7 @@ def infer_replay(run: str, data: str, id: str, t: int, h: List[int] = Query(...)
     H = check_h(h)
     P = predictor(run)
     df = load_trace(data, id)
-    if target_col(SLICES[0], P.direction) not in df:
-        raise HTTPException(400, f"this trace has no {P.direction.upper()} columns")
+    check_inputs(P, df)
     T = len(df)
     t = int(min(max(t, P.L - 1), T - 1))
     from infer import packages
@@ -601,8 +612,7 @@ def infer_export(run: str, data: str, id: str, h: List[int] = Query(...), start:
     P = predictor(run)
     df = load_trace(data, id)
     from infer import packages
-    if target_col(SLICES[0], P.direction) not in df:
-        raise HTTPException(400, f"this trace has no {P.direction.upper()} columns")
+    check_inputs(P, df)
     pk = packages(P, df, H, start=start, seconds=seconds, with_truth=with_truth)
     body = "\n".join(json.dumps(clean_json(p)) for p in pk) + "\n"
     fname = f"a1_packages_{'-'.join(map(str, H))}_{id}.jsonl"

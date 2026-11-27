@@ -26,13 +26,20 @@ def main():
                     help="take this slice's model from RUN (repeat per slice)")
     ap.add_argument("--runs", default="runs")
     ap.add_argument("--no-calibrate", action="store_true")
+    ap.add_argument("--data", default=None,
+                    help="dataset of the composed run; allows sources trained on different but equivalent datasets "
+                         "(e.g. data/raw and data/raw_v2, whose DL columns are bit-identical). The scaler check "
+                         "still verifies that shared columns saw the same training data.")
     a = ap.parse_args()
 
     picks = dict(x.split("=", 1) for x in a.slice)
-    cfgs = {s: json.load(open(os.path.join(a.runs, r, "config.json"))) for s, r in picks.items()}
+    # older runs were saved before these settings existed: missing keys mean the default
+    defaults = {"direction": "dl", "target": "point", "loss": "mse", "quantile": None, "target_mode": "level"}
+    cfgs = {s: {**defaults, **json.load(open(os.path.join(a.runs, r, "config.json")))} for s, r in picks.items()}
     ref = next(iter(cfgs.values()))
+    same = [k for k in SAME if not (a.data and k == "data")]
     for s, c in cfgs.items():
-        diff = [k for k in SAME if c.get(k) != ref.get(k)]
+        diff = [k for k in same if c.get(k) != ref.get(k)]
         if diff:
             raise SystemExit(f"{picks[s]} differs from the other sources in {diff}; models can't be combined")
         if s not in c["groups"]:
@@ -62,6 +69,8 @@ def main():
 
     feats = {cfgs[s]["groups"][s]["features"] == [cfgs[s]["groups"][s]["targets"][0]] for s in picks}
     cfg = {k: ref[k] for k in ref if k not in ("run_id", "groups", "features", "seed", "created", "init_from")}
+    if a.data:
+        cfg["data"] = a.data
     cfg.update({"run_id": a.name, "features": "uni" if feats == {True} else "mixed",
                 "groups": {s: cfgs[s]["groups"][s] for s in picks},
                 "seed": {s: cfgs[s].get("seed") for s in picks},

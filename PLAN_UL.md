@@ -1,6 +1,6 @@
 # Plan: add uplink (UL) to the simulator
 
-Status: **Phases 1–3 done, 2026-11-27** (simulator, `data/raw_v2` 130 h with checks in `reports/dataset/raw_v2/`, pipeline + UI with `--direction dl|ul`). Phases 4–5 to do.
+Status: **All phases (1–5) done, 2026-11-27.** Final models: DL `FINAL/predp_dl_point` (URLLC uses DL + UL history), UL `E13/predp_ul_point_s0` (own history). Results in README → Results, E14 decision and per-seed review in `reports/eval/E14_decision/decision.md`.
 
 Phase 3 notes:
 - `train.py --direction dl|ul` (default dl; saved in `config.json`). Old runs read as DL.
