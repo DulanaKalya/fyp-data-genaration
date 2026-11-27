@@ -286,10 +286,24 @@ Test split: 18 unseen 1 h traces, 64,008 windows. Values are the mean R² of the
 ### Final models (deployment)
 | Direction | Run | Inputs per slice | UI default |
 |---|---|---|---|
-| **DL** | `FINAL/predp_dl_point_v2` | eMBB: own DL history, **median loss** (E15) · **URLLC: DL + UL history** (E14) · mMTC: own DL history | `runs/DEFAULT_RUN` |
-| **UL** | `FINAL/predp_ul_point_v2` | eMBB: own UL history, **median loss** (E15) · URLLC, mMTC: own UL history | `runs/DEFAULT_RUN_UL` |
+| **DL** | `FINAL/predp_dl_point_v3` | eMBB: own DL history, **quantile 0.55 loss** (E16) · **URLLC: DL + UL history** (E14) · mMTC: own DL history | `runs/DEFAULT_RUN` |
+| **UL** | `FINAL/predp_ul_point_v3` | eMBB: own UL history, **quantile 0.60 loss** (E16) · URLLC, mMTC: own UL history | `runs/DEFAULT_RUN_UL` |
+
+**v3 (E16): eMBB beats persistence on MAE *and* under-reserves less.** The median-loss v2 passed the lab rule but was biased low on skewed eMBB demand: its shortfall (mean PRBs below actual demand) was higher than persistence's. E16 swept q = 0.55 / 0.60 / 0.65 with a selection rule registered before training (`reports/eval/E16_selection/RULE.md`): pass the lab rule at 5–12 s **and** have a shortfall ≤ persistence at 5 / 8 / 12 s; take the lowest such q; confirm with 3 seeds. Result: **DL q = 0.55, UL q = 0.60**, all 3 seeds qualify (`reports/eval/E16_selection/confirmation.md`).
+
+| eMBB shortfall (PRB) @5 / 8 / 12 s | DL | UL |
+|---|---|---|
+| v1 (MSE) | 5.98 / 7.46 / 8.91 | 2.91 / 3.52 / 4.19 |
+| v2 (median) | 6.26 / 8.07 / 10.38 | 3.11 / 3.97 / 4.47 |
+| **v3 (q 0.55 / 0.60)** | **5.48 / 6.97 / 9.18** | **2.36 / 3.21 / 3.67** |
+| persistence | 5.94 / 7.69 / 9.36 | 2.94 / 3.59 / 4.20 |
+
+With v3 the lab rule passes at **5–12 s in all 6 slice/direction groups** (`reports/eval/rule_check_final_v3.json`). eMBB UL passes narrowly at 5–6 s (10 of 18 traces won) and clearly from 7 s. 4 s is excluded for timing anyway. v2 is kept as `FINAL/predp_*_point_v2`.
+
+<details><summary>v2 (E15) note</summary>
 
 **v2 (E15): eMBB uses a median (MAE) loss.** The lab's horizon rule scores pooled MAE, p95 error and traces won against persistence (`experiments/horizon_rule_check.py`). MSE-trained eMBB models learn the *mean*, which beats persistence on RMSE but not on MAE, because eMBB demand jumps between levels. With `--loss quantile --quantile 0.5`, eMBB beats persistence on MAE at every horizon (DL 0.988 → 0.955, UL 0.970 → 0.939 of persistence MAE; 16–18 of 18 val traces won; 3 seeds agree). **All horizons 4–12 s now pass the rule in all 6 slice/direction groups** (`reports/eval/rule_check_final_v2.json`). The v1 models (`FINAL/predp_dl_point`, `E13/predp_ul_point_s0`) failed it on eMBB.
+</details>
 
 All use PreDP without the median filter, a 60 s input and 1–15 s outputs, on `data/raw_v2`. `FINAL/predp_dl_point` is composed (`experiments/compose_run.py`) from `E12/predp_final_point_s0` (eMBB, mMTC) and `E14/predp_dl_pair_s0` (URLLC). It needs **UL measurements as input** for URLLC; if UL data is unavailable, use `E12/predp_final_point_s0` (DL only).
 
@@ -366,6 +380,7 @@ Run with `python experiments/run_queue.py --exp E1 E3 --seeds 0 1 2 --parallel 2
 | E11 | Safe-side forecasts: 90th percentile (`--loss quantile`), for the point and peak targets | `runs/E11/` | ✅ URLLC under-prediction drops to 12% (reactive: 72–85%); shortfall 1–1.6 PRBs |
 | E12 | **Final candidates**: no median filter + 60 s lookback, for the point and peak targets | `runs/E12/` | ✅ **PreNS-comparison final**: 0.726 / 0.566 / 0.481 (point), 0.851 / 0.766 / 0.708 (peak) |
 | E13 | **Uplink models** (`data/raw_v2`, `--direction ul`): point, peak, q90, peak-q90 | `runs/E13/` | ✅ point 0.791 / 0.618 / 0.534 and peak 0.885 / 0.800 / 0.748, both above ARIMA (mMTC UL point: tied with ARIMA). Peak-q90 cuts URLLC UL under-prediction to 11–12%. |
+| E16 | **eMBB quantile sweep** q = 0.55 / 0.60 / 0.65, pre-registered rule, 3-seed confirmation | `runs/E16/`, `reports/eval/E16_selection/` | ✅ DL q = 0.55, UL q = 0.60: pass the lab rule **and** shortfall ≤ persistence; q = 0.65 fails MAE. **v3 final models** |
 | E15 | **eMBB median (MAE) loss**, DL and UL, 3 seeds | `runs/E15/` | ✅ passes the lab horizon rule at 4–12 s in every seed (MSE models failed on eMBB); RMSE stays below persistence |
 | E14 | **1 or 2 models per slice?** `uni` (own direction) vs `pair` (DL + UL history), 3 seeds | `runs/E14/`, `reports/eval/E14_decision/` | ✅ eMBB and mMTC: 2 separate models. **URLLC DL: pair** (+2.7 to +4.0% skill, OOD equal). URLLC UL: separate; pair gains only +1% on test and is worse on OOD in every seed. |
 

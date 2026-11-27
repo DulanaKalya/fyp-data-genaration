@@ -1,0 +1,730 @@
+{
+ "dl": {
+  "q55": {
+   "0": {
+    "run": "E16/predp_embb_dl_q55_s0",
+    "rule_pass": true,
+    "shortfall_ok": true,
+    "qualifies": true,
+    "rule": {
+     "5": {
+      "mae_ratio": 0.991609815821262,
+      "p95_ratio": 0.9779370304256173,
+      "wins": 15,
+      "n_traces": 18,
+      "pass": true
+     },
+     "6": {
+      "mae_ratio": 0.9922448915323694,
+      "p95_ratio": 0.9715069685893727,
+      "wins": 14,
+      "n_traces": 18,
+      "pass": true
+     },
+     "7": {
+      "mae_ratio": 0.9881022913577641,
+      "p95_ratio": 0.965385705276849,
+      "wins": 14,
+      "n_traces": 18,
+      "pass": true
+     },
+     "8": {
+      "mae_ratio": 0.9834221619865875,
+      "p95_ratio": 0.96053008713246,
+      "wins": 16,
+      "n_traces": 18,
+      "pass": true
+     },
+     "9": {
+      "mae_ratio": 0.9761826360386949,
+      "p95_ratio": 0.9513527317969703,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "10": {
+      "mae_ratio": 0.9732282057035985,
+      "p95_ratio": 0.947466600361117,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "12": {
+      "mae_ratio": 0.9582050688964913,
+      "p95_ratio": 0.9240264481696061,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     }
+    },
+    "shortfall": {
+     "5": {
+      "model": 5.484880183514962,
+      "persistence": 5.935268874209662
+     },
+     "8": {
+      "model": 6.972880689353418,
+      "persistence": 7.688519249084132
+     },
+     "12": {
+      "model": 9.17542566115339,
+      "persistence": 9.358421728682666
+     }
+    }
+   },
+   "1": {
+    "run": "E16/predp_embb_dl_q55_s1",
+    "rule_pass": true,
+    "shortfall_ok": true,
+    "qualifies": true,
+    "rule": {
+     "5": {
+      "mae_ratio": 0.991237807731187,
+      "p95_ratio": 0.9753719596690001,
+      "wins": 15,
+      "n_traces": 18,
+      "pass": true
+     },
+     "6": {
+      "mae_ratio": 0.9956463535658876,
+      "p95_ratio": 0.9651702211430875,
+      "wins": 12,
+      "n_traces": 18,
+      "pass": true
+     },
+     "7": {
+      "mae_ratio": 0.9849406507847236,
+      "p95_ratio": 0.9594650390066174,
+      "wins": 15,
+      "n_traces": 18,
+      "pass": true
+     },
+     "8": {
+      "mae_ratio": 0.9851809991803454,
+      "p95_ratio": 0.9497899978507064,
+      "wins": 14,
+      "n_traces": 18,
+      "pass": true
+     },
+     "9": {
+      "mae_ratio": 0.9787583518224411,
+      "p95_ratio": 0.9414100175231906,
+      "wins": 16,
+      "n_traces": 18,
+      "pass": true
+     },
+     "10": {
+      "mae_ratio": 0.9727699489027262,
+      "p95_ratio": 0.9354093415282914,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "12": {
+      "mae_ratio": 0.9651302705331885,
+      "p95_ratio": 0.9145910048926155,
+      "wins": 16,
+      "n_traces": 18,
+      "pass": true
+     }
+    },
+    "shortfall": {
+     "5": {
+      "model": 5.537809835223437,
+      "persistence": 5.935268874209662
+     },
+     "8": {
+      "model": 6.939815994065433,
+      "persistence": 7.688519249084132
+     },
+     "12": {
+      "model": 8.62938680712364,
+      "persistence": 9.358421728682666
+     }
+    }
+   },
+   "2": {
+    "run": "E16/predp_embb_dl_q55_s2",
+    "rule_pass": true,
+    "shortfall_ok": true,
+    "qualifies": true,
+    "rule": {
+     "5": {
+      "mae_ratio": 0.9988096515982801,
+      "p95_ratio": 0.9788750290168258,
+      "wins": 12,
+      "n_traces": 18,
+      "pass": true
+     },
+     "6": {
+      "mae_ratio": 0.9869170546236523,
+      "p95_ratio": 0.9661767480557142,
+      "wins": 15,
+      "n_traces": 18,
+      "pass": true
+     },
+     "7": {
+      "mae_ratio": 0.9835766534730659,
+      "p95_ratio": 0.9643374303659883,
+      "wins": 15,
+      "n_traces": 18,
+      "pass": true
+     },
+     "8": {
+      "mae_ratio": 0.9759389584091571,
+      "p95_ratio": 0.9497320609604734,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "9": {
+      "mae_ratio": 0.9715050239365329,
+      "p95_ratio": 0.9402386576861678,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "10": {
+      "mae_ratio": 0.9678353287587639,
+      "p95_ratio": 0.937192997852016,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "12": {
+      "mae_ratio": 0.9619966036559535,
+      "p95_ratio": 0.9216493895076859,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     }
+    },
+    "shortfall": {
+     "5": {
+      "model": 5.222052140912111,
+      "persistence": 5.935268874209662
+     },
+     "8": {
+      "model": 7.4454026763982055,
+      "persistence": 7.688519249084132
+     },
+     "12": {
+      "model": 8.864733974044983,
+      "persistence": 9.358421728682666
+     }
+    }
+   }
+  },
+  "q60": {
+   "0": {
+    "run": "E16/predp_embb_dl_q60_s0",
+    "rule_pass": false,
+    "shortfall_ok": true,
+    "qualifies": false,
+    "rule": {
+     "5": {
+      "mae_ratio": 1.0007182720545436,
+      "p95_ratio": 0.9817573260211024,
+      "wins": 9,
+      "n_traces": 18,
+      "pass": false
+     },
+     "6": {
+      "mae_ratio": 1.005077732240885,
+      "p95_ratio": 0.9764135843724117,
+      "wins": 7,
+      "n_traces": 18,
+      "pass": false
+     },
+     "7": {
+      "mae_ratio": 0.9996876785045151,
+      "p95_ratio": 0.9687904713087991,
+      "wins": 10,
+      "n_traces": 18,
+      "pass": true
+     },
+     "8": {
+      "mae_ratio": 0.9928780723101709,
+      "p95_ratio": 0.9595727393414046,
+      "wins": 12,
+      "n_traces": 18,
+      "pass": true
+     },
+     "9": {
+      "mae_ratio": 0.9878383559665886,
+      "p95_ratio": 0.9543863221325902,
+      "wins": 13,
+      "n_traces": 18,
+      "pass": true
+     },
+     "10": {
+      "mae_ratio": 0.981060623259862,
+      "p95_ratio": 0.9453293316672227,
+      "wins": 15,
+      "n_traces": 18,
+      "pass": true
+     },
+     "12": {
+      "mae_ratio": 0.9700095074402533,
+      "p95_ratio": 0.9212632012041801,
+      "wins": 16,
+      "n_traces": 18,
+      "pass": true
+     }
+    },
+    "shortfall": {
+     "5": {
+      "model": 5.142629019560128,
+      "persistence": 5.935268874209662
+     },
+     "8": {
+      "model": 6.549160936005047,
+      "persistence": 7.688519249084132
+     },
+     "12": {
+      "model": 8.261841845755061,
+      "persistence": 9.358421728682666
+     }
+    }
+   }
+  },
+  "q65": {
+   "0": {
+    "run": "E16/predp_embb_dl_q65_s0",
+    "rule_pass": false,
+    "shortfall_ok": true,
+    "qualifies": false,
+    "rule": {
+     "5": {
+      "mae_ratio": 1.0274344736653456,
+      "p95_ratio": 0.9911202129875711,
+      "wins": 0,
+      "n_traces": 18,
+      "pass": false
+     },
+     "6": {
+      "mae_ratio": 1.015259374226161,
+      "p95_ratio": 0.9791627936914563,
+      "wins": 3,
+      "n_traces": 18,
+      "pass": false
+     },
+     "7": {
+      "mae_ratio": 1.030554943054476,
+      "p95_ratio": 0.9737669407398347,
+      "wins": 2,
+      "n_traces": 18,
+      "pass": false
+     },
+     "8": {
+      "mae_ratio": 1.0289489382830754,
+      "p95_ratio": 0.9733705864185663,
+      "wins": 2,
+      "n_traces": 18,
+      "pass": false
+     },
+     "9": {
+      "mae_ratio": 1.0275374805178816,
+      "p95_ratio": 0.9616205062479599,
+      "wins": 6,
+      "n_traces": 18,
+      "pass": false
+     },
+     "10": {
+      "mae_ratio": 1.0247059540266528,
+      "p95_ratio": 0.9480345615683864,
+      "wins": 6,
+      "n_traces": 18,
+      "pass": false
+     },
+     "12": {
+      "mae_ratio": 1.0164907212113248,
+      "p95_ratio": 0.932751932877279,
+      "wins": 7,
+      "n_traces": 18,
+      "pass": false
+     }
+    },
+    "shortfall": {
+     "5": {
+      "model": 4.5636858390024955,
+      "persistence": 5.935268874209662
+     },
+     "8": {
+      "model": 5.63677677589741,
+      "persistence": 7.688519249084132
+     },
+     "12": {
+      "model": 6.703476828243178,
+      "persistence": 9.358421728682666
+     }
+    }
+   }
+  },
+  "choice": "q55"
+ },
+ "ul": {
+  "q55": {
+   "0": {
+    "run": "E16/predp_embb_ul_q55_s0",
+    "rule_pass": true,
+    "shortfall_ok": false,
+    "qualifies": false,
+    "rule": {
+     "5": {
+      "mae_ratio": 0.9685473753017854,
+      "p95_ratio": 0.9380958363616657,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "6": {
+      "mae_ratio": 0.9641062132211208,
+      "p95_ratio": 0.9335541473981372,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "7": {
+      "mae_ratio": 0.9542572507672752,
+      "p95_ratio": 0.9288114855602624,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "8": {
+      "mae_ratio": 0.9493483399307452,
+      "p95_ratio": 0.9142343147555673,
+      "wins": 18,
+      "n_traces": 18,
+      "pass": true
+     },
+     "9": {
+      "mae_ratio": 0.94717332840195,
+      "p95_ratio": 0.9124744300190184,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "10": {
+      "mae_ratio": 0.9460280334702553,
+      "p95_ratio": 0.9084013454830876,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "12": {
+      "mae_ratio": 0.9447326172270039,
+      "p95_ratio": 0.9089673250438169,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     }
+    },
+    "shortfall": {
+     "5": {
+      "model": 2.7691559834787185,
+      "persistence": 2.9356696934321205
+     },
+     "8": {
+      "model": 3.6234127971967456,
+      "persistence": 3.5889942546417886
+     },
+     "12": {
+      "model": 4.097883378439675,
+      "persistence": 4.198283554181403
+     }
+    }
+   }
+  },
+  "q60": {
+   "0": {
+    "run": "E16/predp_embb_ul_q60_s0",
+    "rule_pass": true,
+    "shortfall_ok": true,
+    "qualifies": true,
+    "rule": {
+     "5": {
+      "mae_ratio": 0.9957794623603475,
+      "p95_ratio": 0.9531988446995682,
+      "wins": 10,
+      "n_traces": 18,
+      "pass": true
+     },
+     "6": {
+      "mae_ratio": 0.9903718561240764,
+      "p95_ratio": 0.9509512316740716,
+      "wins": 10,
+      "n_traces": 18,
+      "pass": true
+     },
+     "7": {
+      "mae_ratio": 0.9686932503751196,
+      "p95_ratio": 0.9380670110337002,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "8": {
+      "mae_ratio": 0.9623026185055102,
+      "p95_ratio": 0.9240826882505578,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "9": {
+      "mae_ratio": 0.9578213813531659,
+      "p95_ratio": 0.9208144548901843,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "10": {
+      "mae_ratio": 0.9591602735100226,
+      "p95_ratio": 0.9175905090443849,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "12": {
+      "mae_ratio": 0.9591132508618562,
+      "p95_ratio": 0.9182618004513439,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     }
+    },
+    "shortfall": {
+     "5": {
+      "model": 2.3598021224411325,
+      "persistence": 2.9356696934321205
+     },
+     "8": {
+      "model": 3.2091110604893545,
+      "persistence": 3.5889942546417886
+     },
+     "12": {
+      "model": 3.6691947635035467,
+      "persistence": 4.198283554181403
+     }
+    }
+   },
+   "1": {
+    "run": "E16/predp_embb_ul_q60_s1",
+    "rule_pass": true,
+    "shortfall_ok": true,
+    "qualifies": true,
+    "rule": {
+     "5": {
+      "mae_ratio": 0.986843436881249,
+      "p95_ratio": 0.9430912159451507,
+      "wins": 13,
+      "n_traces": 18,
+      "pass": true
+     },
+     "6": {
+      "mae_ratio": 0.9728932266736927,
+      "p95_ratio": 0.9360139130629834,
+      "wins": 16,
+      "n_traces": 18,
+      "pass": true
+     },
+     "7": {
+      "mae_ratio": 0.9694772795838388,
+      "p95_ratio": 0.9312310730790969,
+      "wins": 16,
+      "n_traces": 18,
+      "pass": true
+     },
+     "8": {
+      "mae_ratio": 0.9635166652417683,
+      "p95_ratio": 0.916854432785445,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "9": {
+      "mae_ratio": 0.9669943703618015,
+      "p95_ratio": 0.9214737259943409,
+      "wins": 16,
+      "n_traces": 18,
+      "pass": true
+     },
+     "10": {
+      "mae_ratio": 0.9665808291491279,
+      "p95_ratio": 0.9122534104705292,
+      "wins": 14,
+      "n_traces": 18,
+      "pass": true
+     },
+     "12": {
+      "mae_ratio": 0.972890200432217,
+      "p95_ratio": 0.9073962726049605,
+      "wins": 13,
+      "n_traces": 18,
+      "pass": true
+     }
+    },
+    "shortfall": {
+     "5": {
+      "model": 2.483698338416332,
+      "persistence": 2.9356696934321205
+     },
+     "8": {
+      "model": 3.21002512788545,
+      "persistence": 3.5889942546417886
+     },
+     "12": {
+      "model": 3.4369433510590963,
+      "persistence": 4.198283554181403
+     }
+    }
+   },
+   "2": {
+    "run": "E16/predp_embb_ul_q60_s2",
+    "rule_pass": true,
+    "shortfall_ok": true,
+    "qualifies": true,
+    "rule": {
+     "5": {
+      "mae_ratio": 0.9824449949717325,
+      "p95_ratio": 0.9455445585961166,
+      "wins": 16,
+      "n_traces": 18,
+      "pass": true
+     },
+     "6": {
+      "mae_ratio": 0.9846236751165423,
+      "p95_ratio": 0.9423588633728354,
+      "wins": 12,
+      "n_traces": 18,
+      "pass": true
+     },
+     "7": {
+      "mae_ratio": 0.9724841332038711,
+      "p95_ratio": 0.9339274858657041,
+      "wins": 16,
+      "n_traces": 18,
+      "pass": true
+     },
+     "8": {
+      "mae_ratio": 0.9618513948313538,
+      "p95_ratio": 0.918933764278181,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "9": {
+      "mae_ratio": 0.9749232318148239,
+      "p95_ratio": 0.9255190231220467,
+      "wins": 16,
+      "n_traces": 18,
+      "pass": true
+     },
+     "10": {
+      "mae_ratio": 0.9673413355429497,
+      "p95_ratio": 0.9186051583165514,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     },
+     "12": {
+      "mae_ratio": 0.9659424036883569,
+      "p95_ratio": 0.9157108754498591,
+      "wins": 17,
+      "n_traces": 18,
+      "pass": true
+     }
+    },
+    "shortfall": {
+     "5": {
+      "model": 2.507690504214084,
+      "persistence": 2.9356696934321205
+     },
+     "8": {
+      "model": 3.2097846840689006,
+      "persistence": 3.5889942546417886
+     },
+     "12": {
+      "model": 3.5270825698276793,
+      "persistence": 4.198283554181403
+     }
+    }
+   }
+  },
+  "q65": {
+   "0": {
+    "run": "E16/predp_embb_ul_q65_s0",
+    "rule_pass": false,
+    "shortfall_ok": true,
+    "qualifies": false,
+    "rule": {
+     "5": {
+      "mae_ratio": 1.018043467735732,
+      "p95_ratio": 0.959453995708353,
+      "wins": 4,
+      "n_traces": 18,
+      "pass": false
+     },
+     "6": {
+      "mae_ratio": 1.0216507758034812,
+      "p95_ratio": 0.9599022430251262,
+      "wins": 3,
+      "n_traces": 18,
+      "pass": false
+     },
+     "7": {
+      "mae_ratio": 1.0240032577302496,
+      "p95_ratio": 0.9649101489895526,
+      "wins": 4,
+      "n_traces": 18,
+      "pass": false
+     },
+     "8": {
+      "mae_ratio": 1.0032050178517267,
+      "p95_ratio": 0.9421628072783788,
+      "wins": 7,
+      "n_traces": 18,
+      "pass": false
+     },
+     "9": {
+      "mae_ratio": 0.9927968325333952,
+      "p95_ratio": 0.9351024089718825,
+      "wins": 11,
+      "n_traces": 18,
+      "pass": true
+     },
+     "10": {
+      "mae_ratio": 1.0005411117135907,
+      "p95_ratio": 0.9419448477782904,
+      "wins": 7,
+      "n_traces": 18,
+      "pass": false
+     },
+     "12": {
+      "mae_ratio": 0.9913207310872536,
+      "p95_ratio": 0.9277121372548951,
+      "wins": 10,
+      "n_traces": 18,
+      "pass": true
+     }
+    },
+    "shortfall": {
+     "5": {
+      "model": 2.204441603673457,
+      "persistence": 2.9356696934321205
+     },
+     "8": {
+      "model": 2.7134928693332205,
+      "persistence": 3.5889942546417886
+     },
+     "12": {
+      "model": 3.1918587751807252,
+      "persistence": 4.198283554181403
+     }
+    }
+   }
+  },
+  "choice": "q60"
+ }
+}

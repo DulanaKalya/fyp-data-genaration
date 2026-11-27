@@ -62,6 +62,18 @@ def jobs_for(exp, seed):
               "--loss", "quantile", "--quantile", "0.5"] + base
         J.append((f"E15/predp_embb_dl_l1_s{seed}", v2 + ["--direction", "dl"]))
         J.append((f"E15/predp_embb_ul_l1_s{seed}", v2 + ["--direction", "ul"]))
+    elif exp == "E16":    # eMBB quantile sweep: trade MAE (median) against under-reservation (shortfall)
+        for q in ("0.55", "0.60", "0.65"):
+            v2 = ["--data", "data/raw_v2", "--median-filter", "0", "--lookback", "60", "--slices", "embb",
+                  "--loss", "quantile", "--quantile", q] + base
+            tag = q.replace("0.", "q")
+            J.append((f"E16/predp_embb_dl_{tag}_s{seed}", v2 + ["--direction", "dl"]))
+            J.append((f"E16/predp_embb_ul_{tag}_s{seed}", v2 + ["--direction", "ul"]))
+    elif exp == "E16C":   # confirmation of the E16 choice (seed 0): eMBB DL q=0.55, eMBB UL q=0.60
+        for d, q in (("dl", "0.55"), ("ul", "0.60")):
+            v2 = ["--data", "data/raw_v2", "--median-filter", "0", "--lookback", "60", "--slices", "embb",
+                  "--loss", "quantile", "--quantile", q, "--direction", d] + base
+            J.append((f"E16/predp_embb_{d}_{q.replace('0.', 'q')}_s{seed}", v2))
     else:
         raise ValueError(exp)
     return J
