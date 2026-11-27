@@ -26,6 +26,9 @@ def main():
                     help="take this slice's model from RUN (repeat per slice)")
     ap.add_argument("--runs", default="runs")
     ap.add_argument("--no-calibrate", action="store_true")
+    ap.add_argument("--mixed-loss", action="store_true",
+                    help="allow slices trained with different losses (e.g. eMBB median loss, others MSE). The loss "
+                         "only affects training; it is recorded per slice in config['loss_per_slice'].")
     ap.add_argument("--data", default=None,
                     help="dataset of the composed run; allows sources trained on different but equivalent datasets "
                          "(e.g. data/raw and data/raw_v2, whose DL columns are bit-identical). The scaler check "
@@ -37,7 +40,7 @@ def main():
     defaults = {"direction": "dl", "target": "point", "loss": "mse", "quantile": None, "target_mode": "level"}
     cfgs = {s: {**defaults, **json.load(open(os.path.join(a.runs, r, "config.json")))} for s, r in picks.items()}
     ref = next(iter(cfgs.values()))
-    same = [k for k in SAME if not (a.data and k == "data")]
+    same = [k for k in SAME if not (a.data and k == "data") and not (a.mixed_loss and k in ("loss", "quantile"))]
     for s, c in cfgs.items():
         diff = [k for k in same if c.get(k) != ref.get(k)]
         if diff:
@@ -71,6 +74,10 @@ def main():
     cfg = {k: ref[k] for k in ref if k not in ("run_id", "groups", "features", "seed", "created", "init_from")}
     if a.data:
         cfg["data"] = a.data
+    losses = {s: (cfgs[s]["loss"], cfgs[s]["quantile"]) for s in picks}
+    if len(set(losses.values())) > 1:
+        cfg["loss"], cfg["quantile"] = "mixed", None
+        cfg["loss_per_slice"] = {s: (l if q is None else f"{l} q={q}") for s, (l, q) in losses.items()}
     cfg.update({"run_id": a.name, "features": "uni" if feats == {True} else "mixed",
                 "groups": {s: cfgs[s]["groups"][s] for s in picks},
                 "seed": {s: cfgs[s].get("seed") for s in picks},

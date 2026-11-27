@@ -100,7 +100,7 @@ predictor.py              load a run and predict any horizons with confidence
 infer.py                  CLI: emit A1 prediction packages (JSON Lines)
 experiments/
   grid_search.py          hidden × learning-rate grid
-  queue.py                run experiment sets E1–E8
+  run_queue.py            run experiment sets E1–E15
   prens_comparison.py     build the comparison with PreNS Table III
 api/                      FastAPI backend (server.py, background jobs in jobs.py)
 ui/                       React 19 + Vite + TypeScript + Tailwind + Recharts front end
@@ -286,8 +286,10 @@ Test split: 18 unseen 1 h traces, 64,008 windows. Values are the mean R² of the
 ### Final models (deployment)
 | Direction | Run | Inputs per slice | UI default |
 |---|---|---|---|
-| **DL** | `FINAL/predp_dl_point` | eMBB, mMTC: own DL history · **URLLC: DL + UL history** (E14) | `runs/DEFAULT_RUN` |
-| **UL** | `E13/predp_ul_point_s0` | Own UL history for every slice | `runs/DEFAULT_RUN_UL` |
+| **DL** | `FINAL/predp_dl_point_v2` | eMBB: own DL history, **median loss** (E15) · **URLLC: DL + UL history** (E14) · mMTC: own DL history | `runs/DEFAULT_RUN` |
+| **UL** | `FINAL/predp_ul_point_v2` | eMBB: own UL history, **median loss** (E15) · URLLC, mMTC: own UL history | `runs/DEFAULT_RUN_UL` |
+
+**v2 (E15): eMBB uses a median (MAE) loss.** The lab's horizon rule scores pooled MAE, p95 error and traces won against persistence (`experiments/horizon_rule_check.py`). MSE-trained eMBB models learn the *mean*, which beats persistence on RMSE but not on MAE, because eMBB demand jumps between levels. With `--loss quantile --quantile 0.5`, eMBB beats persistence on MAE at every horizon (DL 0.988 → 0.955, UL 0.970 → 0.939 of persistence MAE; 16–18 of 18 val traces won; 3 seeds agree). **All horizons 4–12 s now pass the rule in all 6 slice/direction groups** (`reports/eval/rule_check_final_v2.json`). The v1 models (`FINAL/predp_dl_point`, `E13/predp_ul_point_s0`) failed it on eMBB.
 
 All use PreDP without the median filter, a 60 s input and 1–15 s outputs, on `data/raw_v2`. `FINAL/predp_dl_point` is composed (`experiments/compose_run.py`) from `E12/predp_final_point_s0` (eMBB, mMTC) and `E14/predp_dl_pair_s0` (URLLC). It needs **UL measurements as input** for URLLC; if UL data is unavailable, use `E12/predp_final_point_s0` (DL only).
 
@@ -347,7 +349,7 @@ The full comparison (RMSE/MAE in z-units, per-slice results, cost) is in [`repor
 
 ## Experiments
 
-Run with `python experiments/queue.py --exp E1 E3 --seeds 0 1 2 --parallel 2`. The queue skips runs that have already finished.
+Run with `python experiments/run_queue.py --exp E1 E3 --seeds 0 1 2 --parallel 2`. The queue skips runs that have already finished.
 
 | ID | Question | Runs | Status |
 |---|---|---|---|
@@ -364,6 +366,7 @@ Run with `python experiments/queue.py --exp E1 E3 --seeds 0 1 2 --parallel 2`. T
 | E11 | Safe-side forecasts: 90th percentile (`--loss quantile`), for the point and peak targets | `runs/E11/` | ✅ URLLC under-prediction drops to 12% (reactive: 72–85%); shortfall 1–1.6 PRBs |
 | E12 | **Final candidates**: no median filter + 60 s lookback, for the point and peak targets | `runs/E12/` | ✅ **PreNS-comparison final**: 0.726 / 0.566 / 0.481 (point), 0.851 / 0.766 / 0.708 (peak) |
 | E13 | **Uplink models** (`data/raw_v2`, `--direction ul`): point, peak, q90, peak-q90 | `runs/E13/` | ✅ point 0.791 / 0.618 / 0.534 and peak 0.885 / 0.800 / 0.748, both above ARIMA (mMTC UL point: tied with ARIMA). Peak-q90 cuts URLLC UL under-prediction to 11–12%. |
+| E15 | **eMBB median (MAE) loss**, DL and UL, 3 seeds | `runs/E15/` | ✅ passes the lab horizon rule at 4–12 s in every seed (MSE models failed on eMBB); RMSE stays below persistence |
 | E14 | **1 or 2 models per slice?** `uni` (own direction) vs `pair` (DL + UL history), 3 seeds | `runs/E14/`, `reports/eval/E14_decision/` | ✅ eMBB and mMTC: 2 separate models. **URLLC DL: pair** (+2.7 to +4.0% skill, OOD equal). URLLC UL: separate; pair gains only +1% on test and is worse on OOD in every seed. |
 
 The whole remaining set runs overnight with `experiments/run_remaining.sh`, which logs to `runs/_logs/remaining.log`.

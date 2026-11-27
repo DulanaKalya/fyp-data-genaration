@@ -15,11 +15,11 @@ stamp "E6: OOD evaluation"
 $PY evaluate.py --runs $BASE --split ood --arima-n 1000 --tag E6_ood
 
 stamp "E1 seed 1 (sequential, clean cost)"
-$PY experiments/queue.py --exp E1 --seeds 1 --parallel 1
+$PY experiments/run_queue.py --exp E1 --seeds 1 --parallel 1
 
 stamp "E3 E4 E5 E8 seed 0 + E1 seed 2 (parallel 3)"
-$PY experiments/queue.py --exp E3 E4 E5 E8 --seeds 0 --parallel 3
-$PY experiments/queue.py --exp E1 --seeds 2 --parallel 3
+$PY experiments/run_queue.py --exp E3 E4 E5 E8 --seeds 0 --parallel 3
+$PY experiments/run_queue.py --exp E1 --seeds 2 --parallel 3
 
 stamp "Evaluations"
 ev() { tag=$1; shift; $PY evaluate.py --runs $BASE "$@" --split test --arima-n 0 --tag "$tag"; }

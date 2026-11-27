@@ -1,7 +1,7 @@
 """Run planned experiments (PLAN.md 3.5) as a parallel job queue. Skips runs that already finished.
 
 Usage:
-    python experiments/queue.py --exp E1 E2 --seeds 0 --parallel 2
+    python experiments/run_queue.py --exp E1 E2 --seeds 0 --parallel 2
 """
 import argparse
 import os
@@ -57,6 +57,11 @@ def jobs_for(exp, seed):
         J.append((f"E14/predp_ul_pair_s{seed}", v2 + ["--direction", "ul", "--features", "pair"]))
         J.append((f"E14/predp_dl_uni_s{seed}", v2 + ["--direction", "dl"]))
         J.append((f"E14/predp_dl_pair_s{seed}", v2 + ["--direction", "dl", "--features", "pair"]))
+    elif exp == "E15":    # eMBB with a median (MAE) loss: the lab horizon rule scores MAE / p95, MSE models learn the mean
+        v2 = ["--data", "data/raw_v2", "--median-filter", "0", "--lookback", "60", "--slices", "embb",
+              "--loss", "quantile", "--quantile", "0.5"] + base
+        J.append((f"E15/predp_embb_dl_l1_s{seed}", v2 + ["--direction", "dl"]))
+        J.append((f"E15/predp_embb_ul_l1_s{seed}", v2 + ["--direction", "ul"]))
     else:
         raise ValueError(exp)
     return J

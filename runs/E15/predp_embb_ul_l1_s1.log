@@ -1,0 +1,38 @@
+[embb] train windows=296,184 val=63,468 test=63,468 params=44,559
+[embb] ep   1 train 0.02565 val 0.02398 * (18.3s)
+[embb] ep   2 train 0.02479 val 0.02379 * (19.9s)
+[embb] ep   3 train 0.02465 val 0.02369 * (18.3s)
+[embb] ep   4 train 0.02454 val 0.02368 * (18.4s)
+[embb] ep   5 train 0.02448 val 0.02376   (21.5s)
+[embb] ep   6 train 0.02444 val 0.02361 * (15.4s)
+[embb] ep   7 train 0.02440 val 0.02362   (17.6s)
+[embb] ep   8 train 0.02437 val 0.02365   (18.1s)
+[embb] ep   9 train 0.02433 val 0.02367   (18.5s)
+[embb] ep  10 train 0.02430 val 0.02358 * (18.2s)
+[embb] ep  11 train 0.02427 val 0.02368   (18.6s)
+[embb] ep  12 train 0.02424 val 0.02359   (18.8s)
+[embb] ep  13 train 0.02421 val 0.02383   (18.9s)
+[embb] ep  14 train 0.02419 val 0.02368   (18.4s)
+[embb] ep  15 train 0.02415 val 0.02375   (18.9s)
+[embb] ep  16 train 0.02410 val 0.02385   (18.6s)
+[embb] ep  17 train 0.02405 val 0.02371   (18.6s)
+[embb] ep  18 train 0.02401 val 0.02378   (18.5s)
+[embb] ep  19 train 0.02396 val 0.02385   (18.5s)
+[embb] ep  20 train 0.02392 val 0.02380   (18.3s)
+[embb] ep  21 train 0.02387 val 0.02396   (18.8s)
+[embb] ep  22 train 0.02383 val 0.02384   (19.0s)
+[embb] ep  23 train 0.02378 val 0.02400   (18.5s)
+[embb] ep  24 train 0.02374 val 0.02407   (18.4s)
+[embb] ep  25 train 0.02370 val 0.02406   (18.5s)
+[embb] ep  26 train 0.02365 val 0.02439   (18.5s)
+[embb] ep  27 train 0.02360 val 0.02422   (18.5s)
+[embb] ep  28 train 0.02355 val 0.02443   (18.7s)
+[embb] ep  29 train 0.02352 val 0.02450   (18.7s)
+[embb] ep  30 train 0.02349 val 0.02421   (18.8s)
+Confidence calibrated (confidence.json)
+
+Run saved: runs/E15/predp_embb_ul_l1_s1
+slice    h | RMSE(PRB)    MAE     R2 | persistence RMSE  R2
+embb     5 |      9.05   5.46  0.756 |      9.43  0.735
+embb    10 |     11.49   7.32  0.607 |     12.35  0.545
+embb    15 |     12.92   8.49  0.502 |     13.92  0.422

@@ -1,0 +1,58 @@
+{
+ "run_id": "E15/predp_embb_dl_l1_s2",
+ "model": "predp",
+ "features": "uni",
+ "direction": "dl",
+ "groups": {
+  "embb": {
+   "features": [
+    "embb_req_prb_mean"
+   ],
+   "targets": [
+    "embb_req_prb_mean"
+   ]
+  }
+ },
+ "horizon_mode": "all",
+ "horizons_selected": [
+  5,
+  10,
+  15
+ ],
+ "model_horizons": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15
+ ],
+ "lookback": 60,
+ "hidden": 64,
+ "dropout": 0.0,
+ "lr": 0.001,
+ "batch_size": 32,
+ "max_epochs": 200,
+ "patience": 20,
+ "median_filter": 0,
+ "target_mode": "level",
+ "target": "point",
+ "loss": "quantile",
+ "quantile": 0.5,
+ "seed": 2,
+ "data": "data/raw_v2",
+ "sim_version": "2.0",
+ "train_traces": 84,
+ "train_hours": 84.0,
+ "init_from": null,
+ "created": "2026-11-27T15:51:47"
+}

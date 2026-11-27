@@ -14,9 +14,9 @@ mkdir -p runs/E14
 [ -e runs/E14/predp_dl_uni_s0 ] || ln -s ../E12/predp_final_point_s0 runs/E14/predp_dl_uni_s0
 
 stamp "E13 + E14 seed 0 (parallel 3)"
-$PY experiments/queue.py --exp E13 E14 --seeds 0 --parallel 3
+$PY experiments/run_queue.py --exp E13 E14 --seeds 0 --parallel 3
 stamp "E14 seeds 1, 2 (parallel 3)"
-$PY experiments/queue.py --exp E14 --seeds 1 2 --parallel 3
+$PY experiments/run_queue.py --exp E14 --seeds 1 2 --parallel 3
 
 stamp "Evaluations"
 ev() { $PY evaluate.py "$@"; }

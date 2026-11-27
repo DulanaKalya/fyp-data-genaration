@@ -9,7 +9,7 @@ Phase 3 notes:
 - A1 packages carry `"direction"`.
 - API: `/api/trace?direction=`, runs and datasets report directions, UL uploads accepted.
 - UI: DL/UL switch on Dataset, Direction + `pair` on Train, a UL badge and automatic dataset switch on Inference, mixed-direction guard on Evaluate.
-- Experiment sets: `queue.py --exp E13` (UL point / peak / q90 / peak-q90) and `--exp E14` (uni vs pair, UL and DL). DL columns verified bit-identical to dataset v1; tests in `tests/test_simulator_ul.py`. UL parameters live in `per_trace_ul` / `events_ul` and use their own RNG stream.
+- Experiment sets: `run_queue.py --exp E13` (UL point / peak / q90 / peak-q90) and `--exp E14` (uni vs pair, UL and DL). DL columns verified bit-identical to dataset v1; tests in `tests/test_simulator_ul.py`. UL parameters live in `per_trace_ul` / `events_ul` and use their own RNG stream.
 
 Phase 1 check (18 test traces):
 
@@ -179,7 +179,7 @@ Plots: UL vs DL requested PRBs per slice for one trace; distributions; ACF per d
 | `train.py` | `--direction dl|ul` (default `dl`), saved in `config.json`; run names like `predp_ul_...` |
 | `predictor.py`, `confidence.py`, `evaluate.py` | Read the direction from the config. Confidence τ is fitted **per direction**. |
 | `infer.py` + A1 package | Add `"direction": "dl" | "ul"` to each package |
-| `experiments/queue.py` | New set **E13**: UL point, UL peak, UL q90 (for mMTC/URLLC) |
+| `experiments/run_queue.py` | New set **E13**: UL point, UL peak, UL q90 (for mMTC/URLLC) |
 | `prep/testbed.py` | Map UL KPM columns (`RRU.PrbUsedUl`, `DRB.UEThpUl`) to `*_ul_*` |
 | UI | **Direction** selector (DL / UL) on Train, Evaluate and Inference; direction badge on runs |
 
